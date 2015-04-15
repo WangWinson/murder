@@ -1,5 +1,13 @@
-node_modules/
+.DS_Store
+
+_database
+
+npm-debug.log
 
 docs/
 
 example/
+
+node_modules/
+
+test/

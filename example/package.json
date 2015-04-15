@@ -1,13 +1,10 @@
 {
   "name": "murder-example",
   "version": "0.0.0",
-  "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "npm install && node ./server.js",
-    "test": "cd .. && npm test"
+    "start": "npm install && node ./server.js"
   },
-  "author": "",
   "license": "ISC",
   "dependencies": {
     "browserify": "^9.0.3",

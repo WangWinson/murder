@@ -10,8 +10,9 @@ var Crow = CRDT.extend('Crow');
 module.exports = Crow;
 
 // Assign the author and sources to the prototype.
-Crow.prototype.author = require('./authorId.js')(false);
+Crow.prototype.author = require('./author.js')(false);
 Crow.prototype.sources = require('./sources.js');
+Crow.prototype.relays = require('./relays.js');
 
 // Crow fly operation.
 Crow.defineOperation('fly', function (params, operation) {

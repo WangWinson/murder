@@ -12,8 +12,9 @@ module.exports = Murder;
 Murder.prototype.Type = require('./Crow.js');
 
 // Assign the author and sources for this.
-Murder.prototype.author = require('./authorId.js')(false);
+Murder.prototype.author = require('./author.js')(false);
 Murder.prototype.sources = require('./sources.js');
+Murder.prototype.relays = require('./relays.js');
 
 // ## ISC LICENSE
 

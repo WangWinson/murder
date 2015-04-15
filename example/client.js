@@ -3,7 +3,7 @@
 'use strict';
 
 // Generate a uuid for this client.
-var authorId = require('./authorId.js')(false),
+var author = require('./author.js')(false),
     debug = require('../lib/debug.js');
 
 debug.enable('murder:*');
@@ -16,13 +16,15 @@ var Crow = require('./Crow.js'),
     Murder = require('./Murder.js');
 
 // Construct a murder of crows with the id of this client and the list of sources.
-var murder = new Murder('of_crows'/*, authorId, sources*/);
+var murder = new Murder('of_crows');
+
+exports.crows =
 global.crows = murder;
 
 // Initialize the muder.
 murder.sync().then(function () {
   // Then construct a crow for this client instance.
-  var crow = new Crow(authorId/*, authorId, sources*/);
+  var crow = new Crow(author);
 
   // Initialize the crow.
   crow.sync().then(function () {

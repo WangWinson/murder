@@ -1,5 +1,5 @@
 // # Author ID
-// [lib/index.js](index.html) > example/authorId.js
+// [lib/index.js](index.html) > example/author.js
 'use strict';
 
 // For this example we only need one `uuid`. Only the last 12 digits are used.

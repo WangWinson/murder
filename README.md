@@ -19,7 +19,7 @@ API methods are specified in the documentation in two ways:
 1. `Object.method()` -- Describes a class level method or a module method.
 2. `Object:method()` -- Describes a method on the prototype of the `Object`. This is a shorthand for `Object.prototype.method()` in the documentation.
 
-```
+```javascript
 var myDocument = new Model('id', 'author', [localStorage, remoteSource]);
 myDocument.sync().then(function () {
   myDocument.change({key: 'value'}).then(function () {
