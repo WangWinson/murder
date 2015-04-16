@@ -9,14 +9,14 @@ var browserify = require('browserify'),
 var author = require('./author.js')(true),
     config = require('./config.js'),
     debug = require('../lib/debug.js'),
-    sources = require('./sources.js');
+    relays = require('./relays.js');
 
 var app = express(),
     wss = new ws.Server({port: config.webSocketPort});
 
 wss.on('connection', function wsConn(ws) {
   debug.info('New incoming WebSocket connection...');
-  sources.socket.relay(ws);
+  relays.websocket.connect(ws);
 });
 
 app.get('/main.js', function (req, res) {

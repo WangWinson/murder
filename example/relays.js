@@ -8,23 +8,23 @@ exports = module.exports = [];
 
 var isNodeJS = typeof window === 'undefined';
 
-var WebSocketRelay = require('../lib/sources/WebSocketRelay.js');
+var WebSocketRelay = require('../lib/relays/WebSocketRelay.js');
 
-var socket_relay;
+var websocket;
 
 if (isNodeJS) {
-  socket_relay = new WebSocketRelay({});
+  websocket = new WebSocketRelay({});
 }
 
 else {
-  socket_relay = new WebSocketRelay({url: config.webSocketClientUrl});
+  websocket = new WebSocketRelay({url: config.webSocketClientUrl});
 }
 
 // Push each source to sources array.
-exports.push(socket_relay);
+exports.push(websocket);
 
 // Open all sources.
-socket_relay.open();
+websocket.open();
 
 // Make it easy to select a specific source form the sources array.
-exports.socket = socket_relay;
+exports.websocket = websocket;
