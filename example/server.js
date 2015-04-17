@@ -2,6 +2,8 @@
 // [lib/index.js](index.html) > example/server.js
 'use strict';
 
+require('../lib/index.js');
+
 var browserify = require('browserify'),
     express = require('express'),
     ws = require('ws');
@@ -22,7 +24,7 @@ wss.on('connection', function wsConn(ws) {
 app.get('/main.js', function (req, res) {
   debug.info('Received main.js request, bundling client.js...');
   res.setHeader('content-type', 'application/javascript');
-  var b = browserify(__dirname + '/client.js').bundle();
+  var b = browserify(__dirname + '/client.js', {debug: true}).bundle();
   b.on('error', debug.error);
   b.pipe(res);
 });
@@ -55,42 +57,45 @@ exports.listen = function (cb) {
     var murder = new Murder('of_crows');
 
     // Initialize the muder.
+    debugger;
     murder.sync().then(function () {
+      console.log('murder synced', murder);
+      debugger;
 
       // Then construct a crow for this client instance.
       var crow = new Crow(author);
 
       // Initialize the crow.
-      crow.sync().then(function () {
+      // crow.sync().then(function () {
         // Have the new crow join our murder of crows.
-        crow.fly();
+        // crow.fly();
         murder.add(crow.id);
 
         // Every 10 seconds have the crow fly.
-        setInterval(crow.fly.bind(crow), 20000);
-      });
+        // setInterval(crow.fly.bind(crow), 20000);
+      // });
 
-      var crowTimers = {};
-
-      murder.on('add', function (params) {
-        function timeoutCrow() {
-          clearTimeout(crowTimers[params.id]);
-          crowTimers[params.id] = setTimeout(
-            murder.remove.bind(murder, params.id), 30000);
-        }
-
-        timeoutCrow();
-
-        new Crow(params.id).on('fly', function () {
-          timeoutCrow();
-        });
-      });
-
-      murder.on('remove', function (params) {
-        clearTimeout(crowTimers[params.id]);
-
-        new Crow(params.id).delete();
-      });
+      // var crowTimers = {};
+      //
+      // murder.on('add', function (params) {
+      //   function timeoutCrow() {
+      //     clearTimeout(crowTimers[params.id]);
+      //     crowTimers[params.id] = setTimeout(
+      //       murder.remove.bind(murder, params.id), 30000);
+      //   }
+      //
+      //   timeoutCrow();
+      //
+      //   new Crow(params.id).on('fly', function () {
+      //     timeoutCrow();
+      //   });
+      // });
+      //
+      // murder.on('remove', function (params) {
+      //   clearTimeout(crowTimers[params.id]);
+      //
+      //   new Crow(params.id).delete();
+      // });
     });
   });
 };
