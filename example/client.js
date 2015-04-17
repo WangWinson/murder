@@ -29,14 +29,14 @@ murder.sync().then(function () {
   var crow = new Crow(author);
 
   // Initialize the crow.
-  // crow.sync().then(function () {
+  crow.sync().then(function () {
     // Have the new crow join our murder of crows.
-    // crow.fly();
+    crow.fly();
     murder.add(crow.id);
 
     // Every 10 seconds have the crow fly.
     // setInterval(crow.fly.bind(crow), 20000);
-  // });
+  });
 });
 
 // ## ISC LICENSE
