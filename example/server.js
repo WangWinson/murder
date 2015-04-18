@@ -8,13 +8,17 @@ var browserify = require('browserify'),
     express = require('express'),
     ws = require('ws');
 
-var author = require('./author.js')(true),
-    config = require('./config.js'),
+var author = require('./lib/author.js')(true),
+    config = require('./lib/config.js'),
     debug = require('../lib/debug.js'),
-    relays = require('./relays.js');
+    relays = require('./lib/relays.js');
+
+debug.log('Server initializing...');
 
 var app = express(),
     wss = new ws.Server({port: config.webSocketPort});
+
+debug.log('Server initialized.');
 
 wss.on('connection', function wsConn(ws) {
   debug.info('New incoming WebSocket connection...');
@@ -22,17 +26,27 @@ wss.on('connection', function wsConn(ws) {
 });
 
 app.get('/main.js', function (req, res) {
-  debug.info('Received main.js request, bundling client.js...');
+  debug.info('Received main.js request...');
   res.setHeader('content-type', 'application/javascript');
-  var b = browserify(__dirname + '/client.js', {debug: true}).bundle();
-  b.on('error', debug.error);
-  b.pipe(res);
+  browserify(__dirname + '/client.js', {debug: true}).
+    bundle().
+    on('error', debug.error).
+    pipe(res);
 });
 
 app.use(express.static(__dirname + '/public'));
 
 exports.app = app;
 exports.wss = wss;
+
+exports.model = {
+  Crow: require('./model/Crow.js'),
+  Murder: require('./model/Murder.js'),
+  Post: require('./model/Post.js'),
+  SocialNetwork: require('./model/SocialNetwork.js'),
+  Topic: require('./model/Topic.js'),
+  User: require('./model/User.js')
+};
 
 exports.listen = function (cb) {
   app.listen(3000, function (err) {
@@ -42,14 +56,15 @@ exports.listen = function (cb) {
     if (cb) { cb(); }
 
     // Import data model classes.
-    var Crow = require('./Crow.js'),
-        Murder = require('./Murder.js');
+    var Crow = require('./model/Crow.js'),
+        Murder = require('./model/Murder.js');
 
     // Overwrite sources for server, since it is the centralized source.
     // Crow.prototype.sources =
     // Murder.prototype.sources = storageSources;
 
     // Overwrite author for server side to use server author id.
+    // TODO: set author for every model
     Crow.prototype.author =
     Murder.prototype.author = author;
 
@@ -72,30 +87,43 @@ exports.listen = function (cb) {
         murder.add(crow.id);
 
         // Every 10 seconds have the crow fly.
-        // setInterval(crow.fly.bind(crow), 20000);
+        setInterval(crow.fly.bind(crow), 10000);
       });
 
-      // var crowTimers = {};
-      //
-      // murder.on('add', function (params) {
-      //   function timeoutCrow() {
-      //     clearTimeout(crowTimers[params.id]);
-      //     crowTimers[params.id] = setTimeout(
-      //       murder.remove.bind(murder, params.id), 30000);
-      //   }
-      //
-      //   timeoutCrow();
-      //
-      //   new Crow(params.id).on('fly', function () {
-      //     timeoutCrow();
-      //   });
+      var crowTimers = {};
+
+      // TODO: REMOVE IS NOT WORKING.
+      // murder.collect().then(function () {
+        murder.toArray().forEach(removeIdleCrows);
+          //function (crow) {
+        //   // console.log('GOT HERE:', crow.id);
+        //   crowTimers[crow.id] = crowTimers[crow.id] || setTimeout(
+        //     murder.remove.bind(murder, crow.id), 40000);
+        //
+        // });
       // });
-      //
-      // murder.on('remove', function (params) {
-      //   clearTimeout(crowTimers[params.id]);
-      //
-      //   new Crow(params.id).delete();
-      // });
+
+      murder.on('add', removeIdleCrows);
+
+      function removeIdleCrows(params) {
+        function timeoutCrow() {
+          clearTimeout(crowTimers[params.id]);
+          crowTimers[params.id] = setTimeout(
+            murder.remove.bind(murder, params.id), 20000);
+        }
+
+        timeoutCrow();
+
+        new Crow(params.id).on('fly', function () {
+          timeoutCrow();
+        });
+      }//);
+
+      murder.on('remove', function (params) {
+        clearTimeout(crowTimers[params.id]);
+
+        new Crow(params.id).delete();
+      });
     });
   });
 };

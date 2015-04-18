@@ -8,7 +8,7 @@ exports = module.exports = [];
 
 var isNodeJS = typeof window === 'undefined';
 
-var WebSocketRelay = require('../lib/relays/WebSocketRelay.js');
+var WebSocketRelay = require('../../lib/relays/WebSocketRelay.js');
 
 var websocket;
 

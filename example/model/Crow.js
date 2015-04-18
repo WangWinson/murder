@@ -2,17 +2,16 @@
 // [lib/index.js](index.html) > example/Crow.js
 'use strict';
 
-var CRDT = require('../lib/core/ConflictFreeReplicatedDataType.js'),
-    debug = require('../lib/debug.js');
+var common = require('../lib/common.js'),
+    CRDT = require('../../lib/core/ConflictFreeReplicatedDataType.js'),
+    debug = require('../../lib/debug.js');
 
 var Crow = CRDT.extend('Crow');
 
 module.exports = Crow;
 
 // Assign the author and sources to the prototype.
-Crow.prototype.author = require('./author.js')(false);
-Crow.prototype.sources = require('./sources.js');
-Crow.prototype.relays = require('./relays.js');
+common.configureCRDT(Crow, {isServer: false});
 
 // Crow fly operation.
 Crow.defineOperation('fly', function (params, operation) {

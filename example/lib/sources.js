@@ -6,13 +6,13 @@ exports = module.exports = [];
 
 var isNodeJS = typeof window === 'undefined';
 
-var NedbSource = require('../lib/sources/NedbSource.js'),
-    WebStorageSource = require('../lib/sources/WebStorageSource.js');
+var NedbSource = require('../../lib/sources/NedbSource.js'),
+    WebStorageSource = require('../../lib/sources/WebStorageSource.js');
 
 var storage;
 
 if (isNodeJS) {
-  storage = new NedbSource({filename: __dirname + '/_database'});
+  storage = new NedbSource({filename: __dirname + '/../_database'});
 }
 
 else {

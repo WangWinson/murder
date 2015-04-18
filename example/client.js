@@ -3,22 +3,24 @@
 'use strict';
 
 // Generate a uuid for this client.
-var author = require('./author.js')(false),
+var author = require('./lib/author.js')(false),
     debug = require('../lib/debug.js');
+
+global.CRDTReactMixin = require('../lib/extras/ReactMixin.js');
 
 debug.enable('murder:*');
 // debug.enable('murder:info');
 
-require('./sources.js');
+require('./lib/sources.js');
 
 // Import data model classes.
-var Crow = require('./Crow.js'),
-    Murder = require('./Murder.js');
+var Crow = require('./model/Crow.js'),
+    Murder = require('./model/Murder.js');
 
 // Construct a murder of crows with the id of this client and the list of sources.
 var murder = new Murder('of_crows');
 
-exports.crows =
+exports.crows = murder;
 global.crows = murder;
 
 // Initialize the muder.
@@ -35,7 +37,7 @@ murder.sync().then(function () {
     murder.add(crow.id);
 
     // Every 10 seconds have the crow fly.
-    // setInterval(crow.fly.bind(crow), 20000);
+    setInterval(crow.fly.bind(crow), 10000);
   });
 });
 

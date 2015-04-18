@@ -1,0 +1,12 @@
+.murder {
+  width: 500px;
+  height: 500px;
+  position: relative;
+  border: 1px solid #f00;
+}
+
+.crow {
+  border: 1px solid #0f0;
+  position: absolute;
+  transition: left 2s, top 2s;
+}

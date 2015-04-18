@@ -2,14 +2,22 @@
 <html>
   <head>
     <link rel="stylesheet" type="text/css" href="main.css">
-    <script src="main.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.0/react.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.0/JSXTransformer.js"></script>
   </head>
-  <body aurelia-app>
-    <div id="murder"></div>
-
-    <script>
-      console.log("ready", window.murder);
-      // TODO: reder murder of crows
-    </script>
+  <body>
+    <div id="main">Loading...</div>
+    <script src="main.js"></script>
+    <!-- ordered-dependencies -->
+    <script src="ui/Crow.jsx" type="text/jsx;harmony=true"></script>
+    <script src="ui/Murder.jsx" type="text/jsx;harmony=true"></script>
+    <script src="ui/Post.jsx" type="text/jsx;harmony=true"></script>
+    <script src="ui/Topic.jsx" type="text/jsx;harmony=true"></script>
+    <script src="ui/Feeds.jsx" type="text/jsx;harmony=true"></script>
+    <script src="ui/FriendsList.jsx" type="text/jsx;harmony=true"></script>
+    <script src="ui/User.jsx" type="text/jsx;harmony=true"></script>
+    <script src="ui/SignIn.jsx" type="text/jsx;harmony=true"></script>
+    <script src="ui/App.jsx" type="text/jsx;harmony=true"></script>
+    <!-- /ordered-dependencies -->
   </body>
 </html>
