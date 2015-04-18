@@ -3,6 +3,8 @@
 
 A murder is a group of highly intelligent birds that are known to visually recognize humans. They will transmit information about humans by squawking.
 
+[![wercker status](https://app.wercker.com/status/b41e1151f67e8c92d1ddf75ac2ea3ec9/m "wercker status")](https://app.wercker.com/project/bykey/b41e1151f67e8c92d1ddf75ac2ea3ec9)
+
 >  NOTE: If you are viewing this from GitHub or NPM, try viewing it from the
 >  [documentation site](rolandpoulter.github.io/murder/README.html)
 
