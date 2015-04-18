@@ -56,21 +56,28 @@ gulp.task('example', shell.task(['cd ' + __dirname + '/example' + ' && npm start
 // ### Tests
 
 // Run test once and exit
-gulp.task('test', ['install-example'], function (done) {
-  startKarma(false, done);
+gulp.task('test', function (done) {
+  startKarma(null, done);
+});
+
+// Run test once and exit
+gulp.task('test-ci', function (done) {
+  startKarma('ci', done);
 });
 
 // Watch for file changes and re-run tests on each change
-gulp.task('dev', ['install-example'], function (done) {
-  startKarma(true, done);
+gulp.task('test-dev', function (done) {
+  startKarma('dev', done);
 });
 
-function startKarma(singleRun, done) {
+function startKarma(name, done) {
   exampleServer.listen(function () {
     karma.start({
-      configFile: __dirname + '/karma.conf.js',
-      singleRun: singleRun
-    }, done);
+      configFile: __dirname + '/karma/' + (name ? name + '.' : '') + 'conf.js'
+    }, function (karmaExitCode) {
+      done(karmaExitCode);
+      setTimeout(process.exit.bind(process, karmaExitCode), 5000);
+    });
   });
 }
 

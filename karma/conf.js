@@ -1,8 +1,10 @@
+'use strict';
+
 module.exports = function(config) {
   config.set({
-    autoWatch: true,
+    autoWatch: false,
 
-    basePath: '',
+    basePath: __dirname + '/../',
 
     browserify: {
       debug: true
@@ -11,7 +13,7 @@ module.exports = function(config) {
     browserNoActivityTimeout: 10000,
 
     browsers: [
-      'Chrome'
+      'Chrome',
       // 'Firefox'
       // 'PhantomJS'
       // 'Safari'
@@ -36,6 +38,8 @@ module.exports = function(config) {
       'test/**/*spec.js': ['browserify']
     },
 
-    reporters: ['progress']
+    reporters: ['progress'],
+
+    singleRun: true
   });
 };

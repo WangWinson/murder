@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "chai": "^2.2.0",
+    "es6-shim": "^0.28.1",
     "gulp": "^3.8.10",
     "gulp-cached": "^1.0.2",
     "gulp-docco": "0.0.4",
