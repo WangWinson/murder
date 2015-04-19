@@ -21,6 +21,8 @@ var exampleServer = require('./example/server.js');
 //
 // Usage: `gulp docs`
 gulp.task('docs', function () {
+  // **HACK**: This task never exits on my machine, needs investigation.
+  setTimeout(process.exit, 3000);
   return gulp.src([
       './README.md',
       './lib/**/*.js',
@@ -33,17 +35,23 @@ gulp.task('docs', function () {
     .on('error', gutil.log);
 });
 
-gulp.task('docs-commit', shell.task([
-  'cp -r docs/ docscopy/',
-  'git checkout gh-pages',
-  'rm -rf docs/',
-  'mv docscopy/ docs/',
-  'git add docs/',
-  'git commit -m \"updates docs\"',
-  'git checkout master'
-]));
+gulp.task('docs-commit', function () {
+  // **HACK**: This task never exits on my machine, needs investigation.
+  setTimeout(process.exit, 3000);
+  return shell.task([
+    'cp -r docs/ docscopy/',
+    'git checkout gh-pages',
+    'rm -rf docs/',
+    'mv docscopy/ docs/',
+    'git add docs/',
+    'git commit -m \"updates docs\"',
+    'git checkout master'
+  ]);
+});
 
-gulp.task('docs-push', ['docs', 'docs-commit'], function() {
+gulp.task('docs-push', function() {
+  // **HACK**: This task never exits on my machine, needs investigation.
+  setTimeout(process.exit, 3000);
   git.push('origin', 'gh-pages');
 });
 
@@ -51,9 +59,11 @@ gulp.task('docs-push', ['docs', 'docs-commit'], function() {
 gulp.task('checkout-master', shell.task(['git checkout master']));
 
 // ### Example
-gulp.task('install-example', shell.task(['cd ' + __dirname + '/example' + ' && npm install']));
+gulp.task('install-example',
+  shell.task(['cd ' + __dirname + '/example' + ' && npm install']));
 
-gulp.task('example', shell.task(['cd ' + __dirname + '/example' + ' && npm start']));
+gulp.task('example',
+  shell.task(['cd ' + __dirname + '/example' + ' && npm start']));
 
 // ### Tests
 
