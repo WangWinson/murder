@@ -39,7 +39,7 @@ gulp.task('docs-commit', shell.task([
   'rm -rf docs/',
   'mv docscopy/ docs/',
   'git add docs/',
-  'git commit -a -m \"updates docs\"',
+  'git commit -m \"updates docs\"',
   'git checkout master'
 ]));
 
