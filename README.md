@@ -1,5 +1,5 @@
 # MURDER README
-[lib/index.js](index.html) > README.md
+[lib/index.js](http://rolandpoulter.github.io/murder/docs/index.html) > README.md
 
 A murder is a group of highly intelligent birds that are known to visually recognize humans. They will transmit information about humans by squawking.
 
@@ -8,7 +8,7 @@ A murder is a group of highly intelligent birds that are known to visually recog
 [![Stories in Ready](https://badge.waffle.io/rolandpoulter/murder.png)](https://waffle.io/rolandpoulter/murder)
 
 >  NOTE: If you are viewing this from GitHub or NPM, try viewing it from the
->  [documentation site](rolandpoulter.github.io/murder/README.html)
+>  [documentation site](http://rolandpoulter.github.io/murder/docs/README.html)
 
 Murder is based mainly on Swarm. I wanted an easier API, and better documentation. I also wanted the code to be much simpler than Swarm, like the crdt npm module. I also wanted state changes to acknowledge that they've been distributed with promises.
 
@@ -34,24 +34,24 @@ myDocument.sync().then(function () {
 
 This project is designed to run on a Tessel. In order to meet this requirement no compiled dependencies are used.
 
-https://github.com/collin/crdt
-https://github.com/dominictarr/crdt
-https://github.com/rkusa/or-set
-https://github.com/gritzko/swarm
-http://book.mixu.net/distsys/eventual.html
-http://research.microsoft.com/apps/video/default.aspx?id=153540&r=1
-https://hal.archives-ouvertes.fr/file/index/docid/397981/filename/RR-6956.pdf
-http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf
-http://arxiv.org/pdf/1210.3368v1.pdf
-http://christophermeiklejohn.com/crdt/2014/07/22/readings-in-crdts.html
-https://github.com/soundcloud/roshi#crdt
+* https://github.com/collin/crdt
+* https://github.com/dominictarr/crdt
+* https://github.com/rkusa/or-set
+* https://github.com/gritzko/swarm
+* http://book.mixu.net/distsys/eventual.html
+* http://research.microsoft.com/apps/video/default.aspx?id=153540&r=1
+* https://hal.archives-ouvertes.fr/file/index/docid/397981/filename/RR-6956.pdf
+* http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf
+* http://arxiv.org/pdf/1210.3368v1.pdf
+* http://christophermeiklejohn.com/crdt/2014/07/22/readings-in-crdts.html
+* https://github.com/soundcloud/roshi#crdt
 
-https://github.com/louischatriot/nedb#compacting-the-database
+* https://github.com/louischatriot/nedb#compacting-the-database
 
 ## ISC LICENSE
 
 *Copyright (c) 2015, Roland Poulter <rolandpoulter@gmail.com>*
 
-> Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
 
 **THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.**
