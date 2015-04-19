@@ -17,3 +17,14 @@ build:
     - hgen/gulp:
         tasks:
           - test-ci
+deploy:
+  steps:
+    - hgen/gulp:
+        tasks:
+          - docs
+    - hgen/gulp:
+        tasks:
+          - docs-commit
+    # - script:
+    #     name: docs push
+    #     code: git push https://$GIT_TOKEN@github.com/$WERCKER_GIT_OWNER/$WERCKER_GIT_REPOSITORY.git gh-pages
