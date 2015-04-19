@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>MURDER README</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="murder-readme">MURDER README</h1>
+<p><a href="http://rolandpoulter.github.io/murder/docs/index.html">lib/index.js</a> &gt; README.md</p>
+<p>A murder is a group of highly intelligent birds that are known to visually recognize humans. They will transmit information about humans by squawking.</p>
+<p><a href="https://app.wercker.com/project/bykey/b41e1151f67e8c92d1ddf75ac2ea3ec9"><img src="https://app.wercker.com/status/b41e1151f67e8c92d1ddf75ac2ea3ec9/m" alt="wercker status" title="wercker status"></a></p>
+<p><a href="https://waffle.io/rolandpoulter/murder"><img src="https://badge.waffle.io/rolandpoulter/murder.png" alt="Stories in Ready"></a></p>
+<blockquote>
+<p> NOTE: If you are viewing this from GitHub or NPM, try viewing it from the
+ <a href="http://rolandpoulter.github.io/murder/docs/README.html">documentation site</a></p>
+</blockquote>
+<p>Murder is based mainly on Swarm. I wanted an easier API, and better documentation. I also wanted the code to be much simpler than Swarm, like the crdt npm module. I also wanted state changes to acknowledge that they’ve been distributed with promises.</p>
+<blockquote>
+<p> NOTE: Existing source adapters are implemented against node modules that
+ are written in pure JavaScript so that they do not require a compile step.
+ This was done to make murder more portable. It is easy to write custom
+ source adapters that use modules which depend on compiled extensions.</p>
+</blockquote>
+<h1 id="docs">Docs</h1>
+<p>API methods are specified in the documentation in two ways:</p>
+<ol>
+<li><code>Object.method()</code> — Describes a class level method or a module method.</li>
+<li><code>Object:method()</code> — Describes a method on the prototype of the <code>Object</code>. This is a shorthand for <code>Object.prototype.method()</code> in the documentation.</li>
+</ol>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> myDocument = <span class="hljs-keyword">new</span> Model(<span class="hljs-string">'id'</span>, <span class="hljs-string">'author'</span>, [localStorage, remoteSource]);
+myDocument.sync().then(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+myDocument.change({key: <span class="hljs-string">'value'</span>}).then(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'done'</span>);
+});
+});
+</code></pre>
+<p>This project is designed to run on a Tessel. In order to meet this requirement no compiled dependencies are used.</p>
+<ul>
+<li><a href="https://github.com/collin/crdt">https://github.com/collin/crdt</a></li>
+<li><a href="https://github.com/dominictarr/crdt">https://github.com/dominictarr/crdt</a></li>
+<li><a href="https://github.com/rkusa/or-set">https://github.com/rkusa/or-set</a></li>
+<li><a href="https://github.com/gritzko/swarm">https://github.com/gritzko/swarm</a></li>
+<li><a href="http://book.mixu.net/distsys/eventual.html">http://book.mixu.net/distsys/eventual.html</a></li>
+<li><a href="http://research.microsoft.com/apps/video/default.aspx?id=153540&amp;r=1">http://research.microsoft.com/apps/video/default.aspx?id=153540&amp;r=1</a></li>
+<li><a href="https://hal.archives-ouvertes.fr/file/index/docid/397981/filename/RR-6956.pdf">https://hal.archives-ouvertes.fr/file/index/docid/397981/filename/RR-6956.pdf</a></li>
+<li><a href="http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf">http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf</a></li>
+<li><a href="http://arxiv.org/pdf/1210.3368v1.pdf">http://arxiv.org/pdf/1210.3368v1.pdf</a></li>
+<li><a href="http://christophermeiklejohn.com/crdt/2014/07/22/readings-in-crdts.html">http://christophermeiklejohn.com/crdt/2014/07/22/readings-in-crdts.html</a></li>
+<li><p><a href="https://github.com/soundcloud/roshi#crdt">https://github.com/soundcloud/roshi#crdt</a></p>
+</li>
+<li><p><a href="https://github.com/louischatriot/nedb#compacting-the-database">https://github.com/louischatriot/nedb#compacting-the-database</a></p>
+</li>
+</ul>
+<h2 id="isc-license">ISC LICENSE</h2>
+<p><em>Copyright (c) 2015, Roland Poulter <a href="&#x6d;&#97;&#105;&#108;&#x74;&#111;&#x3a;&#114;&#x6f;&#x6c;&#x61;&#110;&#x64;&#x70;&#x6f;&#117;&#x6c;&#116;&#x65;&#114;&#x40;&#x67;&#x6d;&#97;&#105;&#108;&#x2e;&#99;&#111;&#109;">&#114;&#x6f;&#x6c;&#x61;&#110;&#x64;&#x70;&#x6f;&#117;&#x6c;&#116;&#x65;&#114;&#x40;&#x67;&#x6d;&#97;&#105;&#108;&#x2e;&#99;&#111;&#109;</a></em></p>
+<p>Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.</p>
+<p><strong>THE SOFTWARE IS PROVIDED “AS IS” AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.</strong></p>
+
+            </div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

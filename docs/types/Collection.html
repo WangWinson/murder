@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Collection</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="../docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="collection">Collection</h1>
+<p><a href="../index.html">lib/index.js</a> &gt; lib/types/Collection.js</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-pi">'use strict'</span>;
+<span class="hljs-comment">/*global Promise*/</span>
+
+<span class="hljs-keyword">var</span> CRDT = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../core/ConflictFreeReplicatedDataType.js'</span>),
+    debug = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../debug.js'</span>),
+    Model = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./Model.js'</span>);
+
+<span class="hljs-keyword">var</span> Collection = CRDT.extend(<span class="hljs-string">'Collection'</span>);
+
+<span class="hljs-built_in">module</span>.exports = Collection;
+
+Collection.prototype.init = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+  <span class="hljs-keyword">this</span>.refs = {};
+  <span class="hljs-keyword">this</span>.autoSync = <span class="hljs-literal">false</span>;
+};
+
+Collection.defineOperation(<span class="hljs-string">'add'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(params, operation)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..add:'</span>, <span class="hljs-string">''</span>, <span class="hljs-string">'\n'</span>, params);
+  <span class="hljs-keyword">var</span> id = params.id || params;
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> id !== <span class="hljs-string">'string'</span>) { <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'Can only add object ID.'</span>); }
+  <span class="hljs-keyword">this</span>.state = <span class="hljs-keyword">this</span>.state || {};
+  <span class="hljs-keyword">this</span>.state.objects = <span class="hljs-keyword">this</span>.state.objects || {};
+  <span class="hljs-keyword">this</span>.state.objects[id] = <span class="hljs-literal">true</span>;
+  <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.refs[id]) {
+    <span class="hljs-keyword">this</span>.refs[id] = <span class="hljs-keyword">new</span> <span class="hljs-keyword">this</span>.Type(id, <span class="hljs-keyword">this</span>.author, <span class="hljs-keyword">this</span>.sources);
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.autoSync) { <span class="hljs-keyword">this</span>.refs[id].sync(); }
+  }
+  operation.params = {id: id};
+});
+
+Collection.defineOperation(<span class="hljs-string">'remove'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(params, operation)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..remove:'</span>, <span class="hljs-string">''</span>, <span class="hljs-string">'\n'</span>, params);
+  <span class="hljs-keyword">var</span> id = params.id || params;
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> id !== <span class="hljs-string">'string'</span>) { <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'Can only remove object ID.'</span>); }
+  <span class="hljs-keyword">this</span>.state = <span class="hljs-keyword">this</span>.state || {};
+  <span class="hljs-keyword">this</span>.state.objects = <span class="hljs-keyword">this</span>.state.objects || {};
+  <span class="hljs-keyword">this</span>.state.objects[id] = <span class="hljs-literal">false</span>;
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.refs[id]) { <span class="hljs-keyword">this</span>.refs[id].free(); }
+  <span class="hljs-keyword">delete</span> <span class="hljs-keyword">this</span>.refs[id];
+  operation.params = {id: id};
+});
+
+Collection.defineOperation(<span class="hljs-string">'empty'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(_, operation)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..empty'</span>);
+  <span class="hljs-keyword">var</span> changes = {objects: <span class="hljs-literal">null</span>};
+  <span class="hljs-keyword">this</span>.refs = {};
+  <span class="hljs-keyword">this</span>.state = changes;
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.sync(changes, operation, <span class="hljs-literal">true</span>);
+});
+
+Collection.define(<span class="hljs-string">'free'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(free)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+    <span class="hljs-keyword">this</span>.refs = {};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>NOTE: should this free all the refs?</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">return</span> free.call(<span class="hljs-keyword">this</span>);
+  };
+});
+
+Collection.prototype.Type = Model;
+
+Collection.prototype.objects = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.state &amp;&amp; <span class="hljs-keyword">this</span>.state.objects || {};
+};
+
+Collection.prototype.collect = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(resolve, reject)</span> </span>{
+    <span class="hljs-keyword">var</span> objects = <span class="hljs-keyword">this</span>.objects();
+    <span class="hljs-built_in">Promise</span>.all(<span class="hljs-built_in">Object</span>.keys(objects).map(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(id)</span> </span>{
+      <span class="hljs-keyword">var</span> object = objects[id] &amp;&amp; <span class="hljs-keyword">new</span> <span class="hljs-keyword">this</span>.Type(id, <span class="hljs-keyword">this</span>.author, <span class="hljs-keyword">this</span>.sources);
+      <span class="hljs-keyword">this</span>.refs[id] = object;
+      <span class="hljs-keyword">return</span> object ? object.sync() : emptyPromise();
+    }.bind(<span class="hljs-keyword">this</span>))).then(resolve, reject);
+  }.bind(<span class="hljs-keyword">this</span>));
+};
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">emptyPromise</span><span class="hljs-params">(value)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(resolve)</span> </span>{ resolve(value); });
+}
+
+Collection.prototype.byId = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(id)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(resolve, reject)</span> </span>{
+    <span class="hljs-keyword">var</span> object, exists;
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.refs[id]) { object = <span class="hljs-keyword">this</span>.refs[id]; }
+    <span class="hljs-keyword">else</span> {
+      exists = <span class="hljs-keyword">this</span>.objects()[id];
+      <span class="hljs-keyword">if</span> (!exists) { <span class="hljs-keyword">return</span> resolve(<span class="hljs-literal">null</span>); }
+    }
+    object = object || <span class="hljs-keyword">new</span> <span class="hljs-keyword">this</span>.Type(id, <span class="hljs-keyword">this</span>.author, <span class="hljs-keyword">this</span>.sources);
+    <span class="hljs-keyword">this</span>.refs[id] = object;
+    object.sync().then(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{ resolve(object); }, reject);
+  }.bind(<span class="hljs-keyword">this</span>));
+};
+
+Collection.prototype.toArray = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-built_in">Object</span>.keys(<span class="hljs-keyword">this</span>.refs).map(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(id)</span> </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.refs[id];
+  }.bind(<span class="hljs-keyword">this</span>)).filter(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(object)</span> </span>{
+    <span class="hljs-keyword">return</span> object;
+  });
+};</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

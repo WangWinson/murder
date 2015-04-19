@@ -1,0 +1,1915 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Conflict-free replicated data type (CRDT).</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="../docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="conflict-free-replicated-data-type-crdt-">Conflict-free replicated data type (CRDT).</h1>
+<p><a href="../index.html">lib/index.js</a> &gt; lib/core/ConflictFreeReplicatedDataType.js</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>This attempts to create a basic <em>un-opinionated</em> framework for implementing operation based CRDT.
+See the <a href="http://en.wikipedia.org/wiki/Conflict-free_replicated_data_type">wikipedia page on CRDT.</a></p>
+<p>The goal is not just to deal with state, but to also deal with communication.
+Custom operations can be defined to suit whatever data structure.
+As long as it is possible for the data structure to be defined by a CRDT.</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>The <a href="https://github.com/soundcloud/roshi#crdt">soundcloud roshi project</a> has an excellent explanation:</p>
+<blockquote>
+<p>Operations on CRDTs need to adhere to <a href="http://book.mixu.net/distsys/eventual.html">the following rules</a>:</p>
+<ul>
+<li>Associativity (a+(b+c)=(a+b)+c), so that grouping doesn’t matter.</li>
+<li>Commutativity (a+b=b+a), so that order of application doesn’t matter.</li>
+<li>Idempotence (a+a=a), so that duplication doesn’t matter.</li>
+</ul>
+</blockquote>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <hr>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p><strong>NOTE:</strong> If you’re someone who actually reads the papers on these devices,
+or a math genius, and you notice anything wrong with this framework.
+I would love to hear from you. I started writting this code to learn these concepts myself.</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <hr>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>Promises are used to acknowledge operation delivery.
+Which could be considered a prerversion of what CRDTs are all about.
+It is nice to know when operations have been acknowledged by the sources.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-pi">'use strict'</span>;
+<span class="hljs-comment">/*global Promise*/</span>
+<span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> <span class="hljs-built_in">Promise</span> !== <span class="hljs-string">'function'</span>) { <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'CRDT: Promise constructor unavailable.'</span>); }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>NPM depenedencies are imported first.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> events = <span class="hljs-built_in">require</span>(<span class="hljs-string">'events'</span>),
+    util = <span class="hljs-built_in">require</span>(<span class="hljs-string">'util'</span>),
+    uuid = <span class="hljs-built_in">require</span>(<span class="hljs-string">'uuid'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p><strong>NOTE:</strong> This allows Source to get access to CRDT in spite of circular require calls.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>exports.CRDT = ConflictFreeReplicatedDataType;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Local dependencies are imported second.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> common = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../common.js'</span>),
+    debug = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../debug.js'</span>),
+    Operation = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./Operation.js'</span>),
+    Relay = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./Relay.js'</span>),
+    Source = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./Source.js'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p><code>CRDT</code> is much easier to type.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> CRDT = ConflictFreeReplicatedDataType;
+<span class="hljs-built_in">module</span>.exports = CRDT;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <h3 id="crdt-constructor">CRDT Constructor</h3>
+<p>Generally you wouldn’t want to use this class directly.
+It should be extended into a sub-class. <em>(I personally think inheritance is evil, but it seems to be the de jure.)</em></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>All CRDT sub-classes should adhere to this argument list:</p>
+<ul>
+<li><code>id</code> — Optional, a string or number for uniquely identifying a CRDT.</li>
+<li><code>options.author</code> — Optional, a string or number</li>
+<li><code>options.sources</code> — Operation, an <em>extra</em> set of sources. See <a href="core/Source.html">lib/Source.js</a>.</li>
+<li><code>options.relays</code> — Operation, an <em>extra</em> set of relays. See <a href="core/Relay.html">lib/Relay.js</a>.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">ConflictFreeReplicatedDataType</span><span class="hljs-params">(id, config)</span> </span>{
+  <span class="hljs-keyword">this</span>.id = id || <span class="hljs-keyword">this</span>.uuid();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>Only allows one instance per ID for each different type.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.cache[id]) { <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.cache[id]; }
+  <span class="hljs-keyword">this</span>.cache[id] = <span class="hljs-keyword">this</span>;
+
+  events.EventEmitter.call(<span class="hljs-keyword">this</span>);
+  config = config || {};
+
+  <span class="hljs-keyword">this</span>.author = config.author || <span class="hljs-keyword">this</span>.author || <span class="hljs-string">''</span>;
+
+  <span class="hljs-keyword">this</span>.lastOperationTime = <span class="hljs-literal">null</span>;
+  <span class="hljs-keyword">this</span>.log = {};
+
+  <span class="hljs-keyword">this</span>.relays = <span class="hljs-keyword">this</span>.relays ? <span class="hljs-keyword">this</span>.relays.slice(<span class="hljs-number">0</span>) : [];
+  <span class="hljs-keyword">this</span>.sources = <span class="hljs-keyword">this</span>.sources ? <span class="hljs-keyword">this</span>.sources.slice(<span class="hljs-number">0</span>) : [];
+
+  <span class="hljs-keyword">this</span>.state = <span class="hljs-literal">null</span>;
+  <span class="hljs-keyword">this</span>.tombstone = <span class="hljs-literal">false</span>;
+  <span class="hljs-keyword">this</span>.type = <span class="hljs-keyword">this</span>.constructor.type;
+  <span class="hljs-keyword">this</span>.version = CRDT.initVersion;
+
+  <span class="hljs-keyword">this</span>.addSources(<span class="hljs-keyword">this</span>.sources).addSources(config.sources);
+  <span class="hljs-keyword">this</span>.addRelays(<span class="hljs-keyword">this</span>.relays).addRelays(config.relays);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>Uses the first set of sources if one is not already present.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  hoistList(<span class="hljs-keyword">this</span>, <span class="hljs-string">'sources'</span>);
+  hoistList(<span class="hljs-keyword">this</span>, <span class="hljs-string">'relays'</span>);
+
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">hoistList</span><span class="hljs-params">(self, type)</span> </span>{
+    <span class="hljs-keyword">if</span> (!self.constructor.prototype.hasOwnProperty(type))
+      { self.constructor.prototype[type] = self[type]; }
+  }
+
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..init:'</span>, <span class="hljs-string">''</span>, <span class="hljs-string">'\n'</span>, id, config);
+  <span class="hljs-keyword">this</span>.init(config);
+
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p><strong>Example:</strong></p>
+<pre><code class="lang-javascript"><span class="hljs-keyword">var</span> Foo = CRDT.extend(<span class="hljs-string">'Foo'</span>);
+
+Foo.prototype.author = <span class="hljs-string">'default-author'</span>;
+
+<span class="hljs-comment">// It is important to declare sources on the prototype.</span>
+Foo.prototype.sources = [<span class="hljs-keyword">new</span> Source()];
+
+Foo.defineOperation(<span class="hljs-string">'action'</span>,
+                    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(params, operation)</span> </span>{
+                      ...
+                    });
+
+<span class="hljs-keyword">var</span> bar = <span class="hljs-keyword">new</span> Foo(<span class="hljs-string">'bar'</span>, <span class="hljs-string">'actual-author'</span>,
+                  [<span class="hljs-keyword">new</span> AdditionalSource()]);
+
+bar.sync().then(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'synced:'</span>, bar);
+  bar.action();
+});
+</code></pre>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>CRDT inherits from EventEmitter base class.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>util.inherits(CRDT, events.EventEmitter);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>All CRDT classes must have a type string.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.type = <span class="hljs-string">'GenericCRDT'</span>;
+
+CRDT.initVersion = -<span class="hljs-number">1</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>All CRDT sub-classes are stored in a table.
+This allows any source to get the CRDT class by type string.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> typeTable = {ConflictFreeReplicatedDataType: CRDT, CRDT: CRDT};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <h4 id="crdt-methods">CRDT Methods</h4>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p><strong>CRDT.getType(type)</strong> — Is a getter for CRDT sub-classes by type string.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.getType = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(type)</span> </span>{
+  <span class="hljs-keyword">if</span> (!typeTable[type])
+    { <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'CRDT: "'</span> + type + <span class="hljs-string">'" unavailable.'</span>); }
+  <span class="hljs-keyword">return</span> typeTable[type];
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p><strong>CRDT.getById(id, ensure)</strong> — Is a getter for CRDT instances.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.getById = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(id, ensure)</span> </span>{
+  <span class="hljs-keyword">var</span> crdt = <span class="hljs-keyword">this</span>.prototype.cache[id],
+      isObject;
+  <span class="hljs-keyword">if</span> (ensure &amp;&amp; !crdt) {
+    isObject = <span class="hljs-keyword">typeof</span> isObject === <span class="hljs-string">'object'</span>;
+    crdt = <span class="hljs-keyword">new</span> (<span class="hljs-keyword">this</span>)(id, {
+      author: isObject &amp;&amp; ensure.author || <span class="hljs-literal">undefined</span>,
+      relays: isObject &amp;&amp; ensure.relays || <span class="hljs-literal">undefined</span>,
+      sources: isObject &amp;&amp; ensure.sources || <span class="hljs-literal">undefined</span>
+    });
+  }
+  <span class="hljs-keyword">return</span> crdt;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p><strong>CRDT.extend(type)</strong> — Creates an abstract CRDT sub-class that can be used to
+                         implement different data structures with special operations.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.extend = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(type)</span> </span>{
+  <span class="hljs-keyword">var</span> CRDT = <span class="hljs-keyword">this</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p>Prevent the more than one CRDT with the same type name.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (typeTable[type])
+    { <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'CRDT: "'</span> + type + <span class="hljs-string">'" already exists.'</span>); }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p>Create a new <code>AbstractCRDT</code> constructor that always calls the base constructor.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">AbstractCRDT</span><span class="hljs-params">()</span> </span>{
+    <span class="hljs-keyword">return</span> ConflictFreeReplicatedDataType.apply(<span class="hljs-keyword">this</span>, <span class="hljs-built_in">arguments</span>);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <p>Apply inheritance.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  util.inherits(AbstractCRDT, CRDT);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <p>Add constructor methods.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  AbstractCRDT.define = CRDT.define;
+  AbstractCRDT.defineOperation = CRDT.defineOperation;
+  AbstractCRDT.defineOperationBehavior = CRDT.defineOperationBehavior;
+  AbstractCRDT.defineOperationHandler = CRDT.defineOperationHandler;
+  AbstractCRDT.extend = CRDT.extend;
+  AbstractCRDT.getById = CRDT.getById;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <p>Reset the cache, each CRDT is given its own cache.
+This allows the same ID to be used on different types.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  AbstractCRDT.prototype.cache = {};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p>Operations need their own inheritance applied since they are stored in a nested object.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  AbstractCRDT.prototype.operations = <span class="hljs-built_in">Object</span>.create(CRDT.prototype.operations);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <p>Set the type of this abstract CRDT.
+This will make it easier to debug different CRDT objects.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  AbstractCRDT.type = type;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <p>Store this CRDT in the type table.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  typeTable[type] = AbstractCRDT;
+
+  <span class="hljs-keyword">return</span> AbstractCRDT;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              <p><strong>CRDT.define(name, func)</strong> — A helper method for overriding previously declared methods.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.define = common.defineMethod;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <p><strong>CRDT.defineOperation(name, behavior)</strong> — Is a class method for defining an operations behavior.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.defineOperation = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(name, behavior)</span> </span>{
+  <span class="hljs-keyword">var</span> prototype = <span class="hljs-keyword">this</span>.prototype;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <p>There cannot be an operation called “operation”.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (name === <span class="hljs-string">'operation'</span>)
+    { <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'CRDT: "operation" is not a valid operation name.'</span>); }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <p>Prevent the same operation from being defined twice.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (prototype.operations[name] || prototype[name])
+    { <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'CRDT: Unable to define operation: "'</span> + name + <span class="hljs-string">'" because it already exists.'</span>); }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <p>Declares operation handler:</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  prototype.operations[name] = <span class="hljs-keyword">this</span>.defineOperationHandler(name);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <p>Declares method and operation behavior:</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  prototype[name] = <span class="hljs-keyword">this</span>.defineOperationBehavior(name, behavior);
+
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <p><strong>CRDT.defineOperationHandler(name)</strong> — Is used to generate a handler so that incomming operations can be applied.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.defineOperationHandler = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(name)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation, origin, noBroadcast)</span> </span>{
+    debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..'</span> + name + <span class="hljs-string">'-handler:'</span>, <span class="hljs-string">''</span>, <span class="hljs-string">'\n'</span>, operation.toString());
+
+    operation = <span class="hljs-keyword">this</span>.Operation.create(operation);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <p>Throws an error if an invalid operation is detected.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (!(operation <span class="hljs-keyword">instanceof</span> <span class="hljs-keyword">this</span>.Operation))
+      { <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'CRDT: Handler received an invalid operation.'</span>); }
+    <span class="hljs-keyword">if</span> (operation.method !== name)
+      { <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'CRDT: Mismatched operation method name.'</span>); }
+    <span class="hljs-keyword">if</span> (operation.id !== <span class="hljs-keyword">this</span>.id)
+      { <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'CRDT: Mismatched operation id.'</span>); }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              <p>Remember this operation’s time as the last operation time handled.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">this</span>.lastOperationTime = operation.time;
+
+    <span class="hljs-keyword">var</span> promise;
+
+    <span class="hljs-keyword">try</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <p>Call the behavior method, which may return a promise.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      promise = <span class="hljs-keyword">this</span>[name](operation.params, operation, origin, noBroadcast);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <p>Emit an event incase a continuation is waiting for a response for this operation.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="hljs-keyword">this</span>.emitContinuation(operation, origin);
+    }
+
+    <span class="hljs-keyword">catch</span> (error) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-43">&#182;</a>
+              </div>
+              <p>Since this uses event emitters and promises errors are easily lost.
+A simple <code>try..catch</code> is used to prevent errors from being ignored.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      debug.error(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..'</span> + name + <span class="hljs-string">'-handler:'</span>, <span class="hljs-string">'Error:'</span>, <span class="hljs-string">'\n'</span>, error);
+      <span class="hljs-keyword">throw</span> error;
+    }
+
+    <span class="hljs-keyword">return</span> promise;
+  };
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-44">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-44">&#182;</a>
+              </div>
+              <p><strong>CRDT.defineOperationBehavior(name, behavior)</strong> — Generates an instance method for an operation.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.defineOperationBehavior = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(name, behavior)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(params, operation, origin, noBroadcast)</span> </span>{
+    debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..'</span> + name + <span class="hljs-string">'-behavior:'</span>, <span class="hljs-string">''</span>, <span class="hljs-string">'\n'</span>,
+      util.inspect(params), <span class="hljs-string">''</span> + operation,
+      origin &amp;&amp; origin.type, noBroadcast);
+
+    operation = operation || <span class="hljs-keyword">this</span>.newOperation(name, params);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-45">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-45">&#182;</a>
+              </div>
+              <p>Create a continuation promise if this operation is going to broadcast.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">var</span> continuationPromise = <span class="hljs-comment">/*!noBroadcast &amp;&amp;*/</span> <span class="hljs-keyword">this</span>.newContinuation(operation, origin);
+
+    <span class="hljs-keyword">var</span> behaviorPromise,
+        promises = [];
+
+    params = params || {};
+
+    <span class="hljs-keyword">try</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-46">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-46">&#182;</a>
+              </div>
+              <p>Operation behavior methods may return a promise.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      behaviorPromise = behavior.call(<span class="hljs-keyword">this</span>, params, operation, origin, noBroadcast);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-47">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-47">&#182;</a>
+              </div>
+              <p>They also may change the operation params.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      params = operation.params;
+
+      <span class="hljs-keyword">this</span>.emit(name, params, operation, origin);
+      <span class="hljs-keyword">this</span>.emit(<span class="hljs-string">'operation'</span>, operation, origin);
+    }
+
+    <span class="hljs-keyword">catch</span> (error) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-48">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-48">&#182;</a>
+              </div>
+              <p>Due to the use of promises and event emitters, errors can easily be lost when thrown.
+This <code>try..catch</code> attempts to mitigate this problem.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      debug.error(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..'</span> + name + <span class="hljs-string">'-behavior'</span>, <span class="hljs-string">'Error:'</span>, <span class="hljs-string">'\n'</span>, error);
+      <span class="hljs-keyword">throw</span> error;
+    }
+
+    <span class="hljs-keyword">if</span> (behaviorPromise &amp;&amp; <span class="hljs-keyword">typeof</span> behaviorPromise.then === <span class="hljs-string">'function'</span>)
+      { promises.push(behaviorPromise); }
+
+    <span class="hljs-keyword">if</span> (continuationPromise)
+      { promises.push(continuationPromise); }
+
+    <span class="hljs-keyword">if</span> (!noBroadcast) {
+      promises.push(<span class="hljs-keyword">this</span>.broadcast(operation, origin));
+
+      <span class="hljs-keyword">if</span> (origin !== <span class="hljs-keyword">this</span>)
+        { promises.push(<span class="hljs-keyword">this</span>.append(operation, origin)); }
+    }
+
+    <span class="hljs-keyword">return</span> <span class="hljs-built_in">Promise</span>.all(promises);
+  };
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-49">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-49">&#182;</a>
+              </div>
+              <h4 id="crdt-prototype">CRDT Prototype</h4>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-50">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-50">&#182;</a>
+              </div>
+              <p>Allow custom CRDT implementations to override their dependencies.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.Operation = Operation;
+CRDT.prototype.Relay = Relay;
+CRDT.prototype.Source = Source;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-51">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-51">&#182;</a>
+              </div>
+              <p><code>CRDT:cache</code> — Is used to prevent multiple instances with the same ID.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.cache = {};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-52">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-52">&#182;</a>
+              </div>
+              <p><code>CRDT:author</code> — Declares the default operation author from this session.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.author = <span class="hljs-literal">null</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-53">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-53">&#182;</a>
+              </div>
+              <p><code>CRDT:sources</code> — Is used as the default source list.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.sources = [];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-54">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-54">&#182;</a>
+              </div>
+              <p><code>CRDT:relays</code> — .</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.relays = [];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-55">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-55">&#182;</a>
+              </div>
+              <p><strong>CRDT:init()</strong> — Is called at the end of the CRDT constructor. In this case a no-op.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.init = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-56">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-56">&#182;</a>
+              </div>
+              <p><strong>CRDT:emptyPromise()</strong> —</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.emptyPromise = common.emptyPromise;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-57">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-57">&#182;</a>
+              </div>
+              <p><strong>CRDT:checkType()</strong> —</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.checkType = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(kind, object)</span> </span>{
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> kind === <span class="hljs-string">'string'</span>) { kind = <span class="hljs-keyword">this</span>[kind]; }
+  <span class="hljs-keyword">var</span> isKind = object <span class="hljs-keyword">instanceof</span> kind;
+  <span class="hljs-keyword">if</span> (!isKind) { <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'CRDT: Invalid '</span> + kind.type + <span class="hljs-string">'.'</span>); }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-58">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-58">&#182;</a>
+              </div>
+              <p><strong>CRDT:filterList()</strong> —</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.filterList = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(list, blacklist)</span> </span>{
+  blacklist = <span class="hljs-built_in">Array</span>.isArray(blacklist) ? blacklist : [blacklist];
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>[list].filter(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(item)</span> </span>{
+    <span class="hljs-keyword">return</span> blacklist.indexOf(item) === -<span class="hljs-number">1</span>;
+  });
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-59">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-59">&#182;</a>
+              </div>
+              <p><strong>CRDT:addSources(sources)</strong> — Allows an array of sources to be added.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.addSources = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(sources)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..addSources'</span>);
+  <span class="hljs-keyword">if</span> (sources) { sources.forEach(<span class="hljs-keyword">this</span>.addSource.bind(<span class="hljs-keyword">this</span>)); }
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-60">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-60">&#182;</a>
+              </div>
+              <p><strong>CRDT:addSource(source)</strong> — Connects a CRDT to a data source.
+                        Sources can represent local storage, or a remote data source.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.addSource = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(source)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..addSource'</span>);
+  <span class="hljs-keyword">this</span>.checkType(<span class="hljs-string">'Source'</span>, source);
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.sources.indexOf(source) === -<span class="hljs-number">1</span>) { <span class="hljs-keyword">this</span>.sources.push(source); }
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-61">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-61">&#182;</a>
+              </div>
+              <p><strong>CRDT:removeSource(source)</strong> — Will remove a source from the CRDT.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.removeSource = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(source)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..removeSource'</span>);
+  <span class="hljs-keyword">this</span>.sources = <span class="hljs-keyword">this</span>.filterList(<span class="hljs-string">'sources'</span>, source);
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-62">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-62">&#182;</a>
+              </div>
+              <p><strong>CRDT:filterSources(blacklist)</strong> —</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.filterRelays = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(blacklist)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.filterList(<span class="hljs-string">'relays'</span>, blacklist);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-63">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-63">&#182;</a>
+              </div>
+              <p><strong>CRDT:addRelays(relays)</strong> —</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.addRelays = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(relays)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..addRelays'</span>);
+  <span class="hljs-keyword">if</span> (relays) { relays.forEach(<span class="hljs-keyword">this</span>.addRelay.bind(<span class="hljs-keyword">this</span>)); }
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-64">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-64">&#182;</a>
+              </div>
+              <p><strong>CRDT:addRelay(relay)</strong> —</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.addRelay = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(relay)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..addRelay'</span>);
+  <span class="hljs-keyword">this</span>.checkType(<span class="hljs-string">'Relay'</span>, relay);
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.relays.indexOf(relay) === -<span class="hljs-number">1</span>) { <span class="hljs-keyword">this</span>.relays.push(relay); }
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-65">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-65">&#182;</a>
+              </div>
+              <p><strong>CRDT:removeRelay(relay)</strong> —</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.removeRelay = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(relay)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..removeRelay'</span>);
+  <span class="hljs-keyword">this</span>.relays = <span class="hljs-keyword">this</span>.filterList(<span class="hljs-string">'relays'</span>, relay);
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-66">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-66">&#182;</a>
+              </div>
+              <p><strong>CRDT:filterRelays(blacklist)</strong> —</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.filterRelays = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(blacklist)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.filterList(<span class="hljs-string">'relays'</span>, blacklist);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-67">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-67">&#182;</a>
+              </div>
+              <p><strong>CRDT:uuid()</strong> — Generates a universally unique identifier.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.uuid = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{ <span class="hljs-keyword">return</span> uuid.v4(); };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-68">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-68">&#182;</a>
+              </div>
+              <p><strong>CRDT:time()</strong> — Returns a local timestamp.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.time = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{ <span class="hljs-keyword">return</span> <span class="hljs-built_in">Date</span>.now(); };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-69">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-69">&#182;</a>
+              </div>
+              <p><strong>CRDT:newOperation(method, params)</strong> — Will generate a serialized operations which can be sent to sources.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.newOperation = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(method, params)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..newOperation:'</span>, method);
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-keyword">this</span>.Operation({
+    author: <span class="hljs-keyword">this</span>.author,
+    id: <span class="hljs-keyword">this</span>.id,
+    method: method,</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-70">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-70">&#182;</a>
+              </div>
+              <p><strong>NOTE:</strong> Params may change before the operation is delivered.
+          For example anything with a reference to the operation could:
+          <code>operation.params = newParams;</code></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    params: params,
+    time: <span class="hljs-keyword">this</span>.time(),
+    type: <span class="hljs-keyword">this</span>.type,
+    version: <span class="hljs-keyword">this</span>.version + <span class="hljs-number">1</span>
+  });
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-71">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-71">&#182;</a>
+              </div>
+              <p><strong>CRDT:free()</strong> — Will remove this from local memory, without removing it from any sources.
+                   Without calling this CRDT and Source instances will leak.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.free = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..free'</span>);
+  <span class="hljs-keyword">this</span>.sources.forEach(<span class="hljs-keyword">this</span>.removeSource.bind(<span class="hljs-keyword">this</span>));
+  <span class="hljs-keyword">this</span>.relays.forEach(<span class="hljs-keyword">this</span>.removeRelay.bind(<span class="hljs-keyword">this</span>));
+  <span class="hljs-keyword">this</span>.state = <span class="hljs-literal">null</span>;
+  <span class="hljs-keyword">delete</span> <span class="hljs-keyword">this</span>.cache[<span class="hljs-keyword">this</span>.id];
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-72">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-72">&#182;</a>
+              </div>
+              <p><strong>CRDT:emitContinuation(operation)</strong> — Emits a continuation event.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.emitContinuation = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation, origin)</span> </span>{
+  <span class="hljs-keyword">if</span> (origin <span class="hljs-keyword">instanceof</span> <span class="hljs-keyword">this</span>.Relay) {
+    <span class="hljs-keyword">this</span>.emit(operation.localHash());</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-73">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-73">&#182;</a>
+              </div>
+              <p><strong>HACK:</strong> Contiunation is already handled by CRDT:broadcastSyncResponse()
+          This prevents the <code>sync</code> operation from sending extra messages to clients.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (operation.method !== <span class="hljs-string">'sync'</span>) {
+      <span class="hljs-keyword">this</span>.relays.forEach(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(relay)</span> </span>{
+        relay.publishContinuation(operation, origin);
+      }.bind(<span class="hljs-keyword">this</span>));
+    }
+  }
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-74">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-74">&#182;</a>
+              </div>
+              <p><strong>CRDT:newContinuation(operation)</strong> — Adds a continuation event listener, with a promise
+                                       that will be rejected after 5 seconds.
+                                       Every source needs to acknowledge the operation.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.newContinuation = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation, origin)</span> </span>{
+  <span class="hljs-keyword">if</span> (origin &amp;&amp; origin !== <span class="hljs-keyword">this</span>) { <span class="hljs-keyword">return</span>; }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-75">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-75">&#182;</a>
+              </div>
+              <p>Each source should respond to the oepration within 5 seconds.
+If there are two sources then the continuation should be emitted twice.
+However the continuation should only resolve when all sources acknowledge the operation.
+<strong>TODO:</strong> — Figure out how to make sure all sources respond.
+             DONE?</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">var</span> relayCount = <span class="hljs-keyword">this</span>.relays.length,
+      rejected = <span class="hljs-literal">false</span>,
+      timer = <span class="hljs-literal">null</span>,
+      count = <span class="hljs-number">0</span>;
+
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(resolve, reject)</span> </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-76">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-76">&#182;</a>
+              </div>
+              <p>Continuations will timeout after 5 seconds. This will reject the promise.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    timer = setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+      rejected = <span class="hljs-literal">true</span>;
+      <span class="hljs-keyword">var</span> error = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'CRDT: Coninuation timed-out: '</span> + operation);
+      debug.error(error);
+      reject(error);
+    }, <span class="hljs-number">5000</span>);
+
+    <span class="hljs-keyword">var</span> listener = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+      <span class="hljs-keyword">if</span> (rejected) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-77">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-77">&#182;</a>
+              </div>
+              <p>Cleanup orphaned listeners when a continuation times out.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.removeListener(continuationHash, listener);
+      }
+
+      count += <span class="hljs-number">1</span>;
+
+      <span class="hljs-keyword">if</span> (count &gt;= relayCount) {
+        clearTimeout(timer);
+        resolve(<span class="hljs-keyword">this</span>);
+        <span class="hljs-keyword">this</span>.removeListener(continuationHash, listener);
+      }
+    }.bind(<span class="hljs-keyword">this</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-78">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-78">&#182;</a>
+              </div>
+              <p>It is okay that the <code>continuationHash</code> is defined after the listener.
+The listener can’t be called until it is added.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">var</span> continuationHash = operation.localHash();
+    <span class="hljs-keyword">this</span>.on(continuationHash, listener);
+  }.bind(<span class="hljs-keyword">this</span>));
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-79">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-79">&#182;</a>
+              </div>
+              <p><strong>CRDT:invoke(operation)</strong> — Can be called with a serialized operation
+                              and it will perform the operation on this CRDT.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.invoke = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation, origin, noBroadcast)</span> </span>{
+  operation = <span class="hljs-keyword">this</span>.Operation.create(operation);
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..invoke:'</span>, <span class="hljs-string">''</span>, <span class="hljs-string">'\n'</span>, operation.toString());
+
+  <span class="hljs-keyword">var</span> handler = <span class="hljs-keyword">this</span>.operations[operation.method];
+
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> handler !== <span class="hljs-string">'function'</span>)
+    { <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'CRDT: Invalid method specified by operation.'</span>); }
+
+  <span class="hljs-keyword">return</span> handler.call(<span class="hljs-keyword">this</span>, operation, origin || <span class="hljs-keyword">this</span>, noBroadcast);
+};
+
+CRDT.prototype.append = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation, origin)</span> </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-80">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-80">&#182;</a>
+              </div>
+              <p>No need to store sync operations with no params.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (operation.method === <span class="hljs-string">'sync'</span> &amp;&amp; !operation.params)
+    { <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.emptyPromise(); }
+
+  <span class="hljs-keyword">var</span> localHash = operation.localHash(),
+      list = <span class="hljs-keyword">this</span>.log[localHash],
+      op = operation.toString();
+
+  <span class="hljs-keyword">if</span> (list &amp;&amp; list.indexOf(op) === -<span class="hljs-number">1</span>) { list.push(op); }
+  <span class="hljs-keyword">else</span> { <span class="hljs-keyword">this</span>.log.localHash = [op]; }
+
+  <span class="hljs-keyword">var</span> promises = <span class="hljs-keyword">this</span>.sources.map(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(source)</span> </span>{
+    <span class="hljs-keyword">if</span> (origin !== source) { source.append(operation, origin); }
+  }.bind(<span class="hljs-keyword">this</span>));
+
+  <span class="hljs-keyword">return</span> <span class="hljs-built_in">Promise</span>.all(promises);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-81">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-81">&#182;</a>
+              </div>
+              <p><strong>CRDT:broadcast(operation)</strong> — Is used to deliver an operation to each source, unless there is a skip function.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.broadcast = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation, origin)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..broadcast:'</span>, <span class="hljs-string">''</span>, <span class="hljs-string">'\n'</span>, operation.toString());
+
+  <span class="hljs-keyword">var</span> promises = <span class="hljs-keyword">this</span>.sources.map(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(source)</span> </span>{
+    <span class="hljs-keyword">if</span> (origin !== source) { source.deliver(operation, origin); }
+  }.bind(<span class="hljs-keyword">this</span>));
+
+  <span class="hljs-keyword">this</span>.relays.forEach(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(relay)</span> </span>{
+    <span class="hljs-keyword">if</span> (origin !== relay) { relay.publish(operation, origin); }
+  }.bind(<span class="hljs-keyword">this</span>));
+
+  <span class="hljs-keyword">return</span> <span class="hljs-built_in">Promise</span>.all(promises);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-82">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-82">&#182;</a>
+              </div>
+              <p><strong>CRDT:compress()</strong> —</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.compress = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..compress:'</span>, <span class="hljs-string">''</span>, <span class="hljs-string">'\n'</span>);
+
+  <span class="hljs-keyword">var</span> promises = <span class="hljs-keyword">this</span>.sources.map(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(source)</span> </span>{
+    source.compress(<span class="hljs-keyword">this</span>);
+  }.bind(<span class="hljs-keyword">this</span>));
+
+  <span class="hljs-keyword">return</span> <span class="hljs-built_in">Promise</span>.all(promises);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-83">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-83">&#182;</a>
+              </div>
+              <p><strong>CRDT:resolveState()</strong> — When operations are received out of order this method can be called to
+                           reset the state and cycle through operation logs to rebuild the state in order.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.resolveState = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..resolveState'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-84">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-84">&#182;</a>
+              </div>
+              <p>We don’t want this method to be called while it is in the middle of resolving state.
+That would cause a stack overflow.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.isResolving) { <span class="hljs-keyword">return</span>; }
+  <span class="hljs-keyword">this</span>.isResolving = <span class="hljs-literal">true</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-85">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-85">&#182;</a>
+              </div>
+              <p>Reset last operation time, state, tombestone and version fields.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">this</span>.lastOperationTime = <span class="hljs-number">0</span>;
+  <span class="hljs-keyword">this</span>.state = {};
+  <span class="hljs-keyword">this</span>.tombstone = <span class="hljs-literal">false</span>;
+  <span class="hljs-keyword">this</span>.version = -<span class="hljs-number">1</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-86">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-86">&#182;</a>
+              </div>
+              <p>Sort the log by time and then invoke each operation in order.
+This should rebuild the state correctly.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">var</span> log = [];
+  <span class="hljs-keyword">this</span>.log.forEach(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(key)</span> </span>{ log = log.concat(<span class="hljs-keyword">this</span>.log[key]); }.bind(<span class="hljs-keyword">this</span>));
+
+  log.sort(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(a, b)</span> </span>{ <span class="hljs-keyword">return</span> a.time - b.time; });
+  log.forEach(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation)</span> </span>{
+    <span class="hljs-keyword">this</span>.invoke(operation, <span class="hljs-keyword">this</span>, <span class="hljs-literal">true</span>);
+  }.bind(<span class="hljs-keyword">this</span>));
+
+  <span class="hljs-keyword">delete</span> <span class="hljs-keyword">this</span>.isResolving;
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.compress();
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-87">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-87">&#182;</a>
+              </div>
+              <p><strong>CRDT:syncState(state)</strong> — Will sync the current state to all sources.
+                             If no <code>state</code> value is passed it will use <code>this.state</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.syncState = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(state)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..syncState'</span>);
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.sync({state: state || <span class="hljs-keyword">this</span>.state});
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-88">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-88">&#182;</a>
+              </div>
+              <p><strong>CRDT:replaceState(state)</strong> — Sets the local state to whatever value is passed.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.replaceState = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(state)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..replaceState'</span>);
+  <span class="hljs-keyword">this</span>.state = state;
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-89">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-89">&#182;</a>
+              </div>
+              <p><strong>CRDT:mergeState(state)</strong> — Is a placeholder method for merging another state into the current state.
+                              By default it replaces the old state with the new state.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.mergeState = CRDT.prototype.replaceState;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-90">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-90">&#182;</a>
+              </div>
+              <p><code>CRDT:invalidOffsetVersion</code> — Is used to offset the local version when comparing it to an operation’s version.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.invalidOffsetVersion = <span class="hljs-number">2</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-91">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-91">&#182;</a>
+              </div>
+              <p><code>CRDT:invalidOffsetTime</code> — Is used to offset the last operation time when comparing it to another operation’s time.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.invalidOffsetTime = <span class="hljs-number">16</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-92">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-92">&#182;</a>
+              </div>
+              <p>**CRDT:isInvalidOperation(operation) — Will determine if an operation that was received
+                                        could make the state inconsistent.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.isInvalidOperation = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation)</span> </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-93">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-93">&#182;</a>
+              </div>
+              <p>If the operation is falsy, or the version is old than the current version.
+Or if the operation time is before the last operation.
+Then the operation is invalid.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">return</span> operation &amp;&amp;
+         operation.version &lt; (<span class="hljs-keyword">this</span>.version - <span class="hljs-keyword">this</span>.invalidOffsetVersion) &amp;&amp;
+         operation.time &lt; (<span class="hljs-keyword">this</span>.lastOperationTime - <span class="hljs-keyword">this</span>.invalidOffsetTime);
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-94">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-94">&#182;</a>
+              </div>
+              <p><strong>CRDT:broadcastSyncResponse()</strong> —</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.broadcastSyncResponse = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation, origin)</span> </span>{
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.version &gt; CRDT.initVersion) {
+    operation.params = {state: operation.params || {}};
+
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.state)
+      { operation.params = {state: <span class="hljs-keyword">this</span>.state}; }
+
+    <span class="hljs-keyword">if</span> (origin <span class="hljs-keyword">instanceof</span> <span class="hljs-keyword">this</span>.Source)
+      { origin.deliver(operation, origin); }
+
+    <span class="hljs-keyword">if</span> (origin <span class="hljs-keyword">instanceof</span> <span class="hljs-keyword">this</span>.Relay)
+     { origin.publish(operation, origin); }
+  }
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.emptyPromise();
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-95">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-95">&#182;</a>
+              </div>
+              <h4 id="crdt-operation-methods">CRDT Operation Methods</h4>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.prototype.operations = {};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-96">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-96">&#182;</a>
+              </div>
+              <p><strong>CRDT:sync(params, operation)</strong> — Is an operation that requests state from other sources,
+                                    or declares state to other sources.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.defineOperation(<span class="hljs-string">'sync'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(params, operation, origin)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..sync-method'</span>);
+
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.tombstone) { <span class="hljs-keyword">return</span>; }
+
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.isInvalidOperation(operation) &amp;&amp; !<span class="hljs-keyword">this</span>.isResolving)
+    { <span class="hljs-keyword">this</span>.resolveState(); }
+
+  <span class="hljs-keyword">if</span> (params) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-97">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-97">&#182;</a>
+              </div>
+              <p>Allow the state to be blindly replace, or merged.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">if</span> (params.state) { <span class="hljs-keyword">this</span>.replaceState(params.state); }
+    <span class="hljs-keyword">if</span> (params.merge) { <span class="hljs-keyword">this</span>.mergeState(params.state); }
+    <span class="hljs-keyword">this</span>.compress();
+  }
+
+  <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (origin <span class="hljs-keyword">instanceof</span> <span class="hljs-keyword">this</span>.Relay)
+    { <span class="hljs-keyword">this</span>.broadcastSyncResponse(operation, <span class="hljs-literal">null</span>); }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-98">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-98">&#182;</a>
+              </div>
+              <p><strong>TODO</strong>: this is not working
+Update the version.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">if</span> (operation.version &gt; <span class="hljs-keyword">this</span>.version)
+    { <span class="hljs-keyword">this</span>.version = operation.version; }
+  <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (operation.version === <span class="hljs-keyword">this</span>.version)
+    { <span class="hljs-keyword">this</span>.version += <span class="hljs-number">1</span>; }
+});</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-99">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-99">&#182;</a>
+              </div>
+              <p><strong>CRDT:delete(_, operation)</strong> — This operation will eventually delete the CRDT object locally,
+                                 and from any replicas on other sources.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>CRDT.defineOperation(<span class="hljs-string">'delete'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(_, operation)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..delete-method'</span>);
+
+  <span class="hljs-keyword">this</span>.tombstone = <span class="hljs-literal">true</span>;
+  <span class="hljs-keyword">this</span>.version = operation.version;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-100">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-100">&#182;</a>
+              </div>
+              <p><code>free()</code> allows memory to be garbage collected.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">this</span>.free();
+});</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

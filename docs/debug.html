@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Source</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="source">Source</h1>
+<p><a href="index.html">lib/index.js</a> &gt; lib/debug.js</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-pi">'use strict'</span>;
+
+<span class="hljs-keyword">var</span> debug = <span class="hljs-built_in">require</span>(<span class="hljs-string">'debug'</span>);
+
+exports = <span class="hljs-built_in">module</span>.exports = debug;
+
+exports.log = debug(<span class="hljs-string">'murder:log'</span>);
+exports.log.log = <span class="hljs-built_in">console</span>.log.bind(<span class="hljs-built_in">console</span>);
+
+exports.info = debug(<span class="hljs-string">'murder:info'</span>);
+exports.info.log = <span class="hljs-built_in">console</span>.info.bind(<span class="hljs-built_in">console</span>);
+
+exports.warn = debug(<span class="hljs-string">'murder:warn'</span>);
+exports.warn.log = <span class="hljs-built_in">console</span>.warn.bind(<span class="hljs-built_in">console</span>);
+
+exports.error = debug(<span class="hljs-string">'murder:error'</span>);
+exports.error.log = <span class="hljs-built_in">console</span>.error.bind(<span class="hljs-built_in">console</span>);</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

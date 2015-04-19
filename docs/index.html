@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Murder Docs</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="murder-docs">Murder Docs</h1>
+<p><strong>(lib/index.js)</strong></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Please read the <a href="README.html">README</a> before diving into the other documentation.</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>Here is an overview of the Murder codebase:</p>
+<ul>
+<li><strong>docs/</strong> — Target directory for generated documentation.
+Everything that follows, is a result of what you see here.</li>
+<li><strong>example/</strong> — Example use case for Murder.<ul>
+<li><a href="author.html">example/author.js</a> — Author ID generator for client and server.</li>
+<li><a href="client.html">example/client.js</a> — Basic client example script, used as bundle entry point with browserify.</li>
+<li><a href="config.html">example/config.js</a> — Basic client/server config.</li>
+<li><a href="Crow.html">example/Crow.js</a> — Model sub-class represents a crow.</li>
+<li><a href="Murder.html">example/Murder.js</a> — Collection sub-class for a Murder of crows.</li>
+<li>package.json — Example uses seperate dependencies.</li>
+<li><strong>example/public/</strong> — Public HTTP file server directory.<ul>
+<li>example/public/index.html — Main HTML file.</li>
+<li>example/public/main.css — Main CSS file.</li>
+</ul>
+</li>
+<li><a href="relays.html">example/relays.js</a> — Common relays definition script.</li>
+<li><a href="server.html">example/server.js</a> — Basic server example script.</li>
+<li><a href="sources.html">example/sources.js</a> — Common sources definition script.</li>
+<li><a href="sources.html">example/tessel.js</a> — Basic client on a tessel.</li>
+</ul>
+</li>
+<li><a href="gulpfile.html">gulpfile.js</a> — Useful gulp tasks for development.</li>
+<li><strong>karma/</strong> — </li>
+<li><strong>lib/</strong> — Core CRDT implementation plus extra adapters and types.<ul>
+<li><strong>lib/core/</strong> — Core CRDT implementation plus extra adapters and types.<ul>
+<li><a href="core/ConflictFreeReplicatedDataType.html">lib/core/ConflictFreeReplicatedDataType.js</a> — CRDT base class.</li>
+<li><a href="core/Operation.html">lib/core/Operation.js</a> — CRDT operation class.</li>
+<li><a href="core/Relay.html">lib/core/Relay.js</a> — Source message relay class.</li>
+<li><a href="core/Source.html">lib/core/Source.js</a> — CRDT source base class.</li>
+</ul>
+</li>
+<li>lib/debug.js — Debug logger.</li>
+<li><strong>lib/extras/</strong> — Extra integration resources.<ul>
+<li><a href="extras/ReactMixin.html">lib/extras/ReactMixin.js</a> — Easy React integration.</li>
+</ul>
+</li>
+<li>lib/index.js — Default module entry point. <strong>This file.</strong></li>
+<li><strong>lib/relays/</strong> — Different Relay implementations.<ul>
+<li><a href="relays/HTTPSource.html">lib/relays/HTTPSource.js</a> — HTTP Relay implementation.</li>
+<li><a href="relays/StompSource.html">lib/relays/StompSource.js</a> — Stomp Relay implementation.</li>
+<li><a href="relays/WebRTCSource.html">lib/relays/WebRTCSource.js</a> — WebRTC Relay implementation.</li>
+<li><a href="relays/WebSocketSource.html">lib/relays/WebSocketSource.js</a> — WebSocket Relay implementation.</li>
+</ul>
+</li>
+<li><strong>lib/sources/</strong> — Different Source implementations.<ul>
+<li><a href="sources/NedbSource.html">lib/sources/NedbSource.js</a> — NeDB Source adapter.</li>
+<li><a href="sources/RedisSource.html">lib/sources/RedisSource.js</a> — Redis Source adapter.</li>
+<li><a href="sources/WebStorageSource.html">lib/sources/WebStorageSource.js</a> — WebStorage Source adapter.</li>
+</ul>
+</li>
+<li><strong>lib/types/</strong> — Various CRDT data structures.<ul>
+<li><a href="types/Collection.html">lib/types/Collection.js</a> — A list of other CRDT objects.</li>
+<li><a href="types/Graph.html">lib/types/Graph.js</a> — A graph of other CRDT objects.</li>
+<li><a href="types/Model.html">lib/types/Model.js</a> — A basic CRDT document object.</li>
+<li><a href="types/Text.html">lib/types/Text.js</a> — A text CRDT for collaboration.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>LICENSE — Modified copyleft ISC license. It is in every file. See bottom.</li>
+<li>package.json — Core module dependencies and NPM details.</li>
+<li><a href="README.html">README.md</a> — Read this file first.</li>
+<li><strong>test/</strong> — Test scripts. Omitted from docs.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-pi">'use strict'</span>;
+
+exports.ConflictFreeReplicatedDataType =
+  <span class="hljs-built_in">require</span>(<span class="hljs-string">'./core/ConflictFreeReplicatedDataType.js'</span>);
+exports.CRDT = exports.ConflictFreeReplicatedDataType;
+
+exports.debug = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./debug.js'</span>);
+
+exports.Operation = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./core/Operation.js'</span>);
+
+exports.Relay = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./core/Relay.js'</span>);
+
+exports.Source = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./core/Source.js'</span>);
+
+exports.uuid = <span class="hljs-built_in">require</span>(<span class="hljs-string">'uuid'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <h2 id="isc-license">ISC LICENSE</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p><em>Copyright (c) 2015, Roland Poulter <a href="&#x6d;&#x61;&#x69;&#x6c;&#x74;&#x6f;&#x3a;&#114;&#x6f;&#108;&#x61;&#110;&#100;&#112;&#111;&#x75;&#x6c;&#x74;&#x65;&#114;&#64;&#x67;&#x6d;&#x61;&#x69;&#x6c;&#x2e;&#x63;&#111;&#109;">&#114;&#x6f;&#108;&#x61;&#110;&#100;&#112;&#111;&#x75;&#x6c;&#x74;&#x65;&#114;&#64;&#x67;&#x6d;&#x61;&#x69;&#x6c;&#x2e;&#x63;&#111;&#109;</a></em></p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <blockquote>
+<p>Permission to use, copy, modify, and/or distribute this software for any purpose
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.</p>
+</blockquote>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p><strong>THE SOFTWARE IS PROVIDED “AS IS” AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE
+OF THIS SOFTWARE.</strong></p>
+
+            </div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

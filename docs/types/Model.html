@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Model</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="../docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="model">Model</h1>
+<p><a href="../index.html">lib/index.js</a> &gt; lib/types/Model.js</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-pi">'use strict'</span>;
+
+<span class="hljs-keyword">var</span> CRDT = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../core/ConflictFreeReplicatedDataType.js'</span>),
+    debug = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../debug.js'</span>);
+
+<span class="hljs-keyword">var</span> Model = CRDT.extend(<span class="hljs-string">'Model'</span>);
+
+<span class="hljs-built_in">module</span>.exports = Model;
+
+Model.prototype.init = <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(config)</span> </span>{
+  <span class="hljs-keyword">if</span> (config.schema) { <span class="hljs-keyword">this</span>.schema = config.schema; }
+};
+
+Model.defineOperation(<span class="hljs-string">'change'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(params, operation)</span> </span>{
+  debug.log(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">'..change-method'</span>);
+  <span class="hljs-keyword">var</span> promise;
+  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.isInvalidOperation(operation)) {
+    promise = <span class="hljs-keyword">this</span>.resolveState();
+  }
+  <span class="hljs-keyword">this</span>.version = operation.version;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>TODO:
+this.state = params || this.state;
+var stateChange = new this.StateChange();
+stateChange.diff(this.state, params.state);
+stateChange.apply(this.state);
+debug.log(‘FINISH’);</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">return</span> promise;
+});</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>TODO: I dunno if deep-diff is essential for this.
+      A simple mixin function might do the trick.
+var diff = require(‘deep-diff’);</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>Model.prototype.StateChange = StateChange;</p>
+<p>function StateChange() {
+  return this;
+}</p>
+<p>StateChange.prototype.diff = function (target, source) {
+  this.changes = diff(target, source);
+  return this;
+};</p>
+<p>StateChange.prototype.apply = function (target) {
+  this.changes.forEach(function (change) {
+    diff.applyChange(target, true, change);
+  });
+  return this;
+};</p>
+
+            </div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

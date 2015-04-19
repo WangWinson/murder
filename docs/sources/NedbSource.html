@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>NeDB Source</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="../docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="nedb-source">NeDB Source</h1>
+<p><a href="../index.html">lib/index.js</a> &gt; lib/sources/NedbSource.js</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-pi">'use strict'</span>;
+
+<span class="hljs-keyword">var</span> NedbDatabase = <span class="hljs-built_in">require</span>(<span class="hljs-string">'nedb'</span>);
+
+<span class="hljs-keyword">var</span> debug = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../debug.js'</span>);
+
+<span class="hljs-keyword">var</span> NedbSource = <span class="hljs-built_in">require</span>(<span class="hljs-string">'../core/Source.js'</span>).adapt(<span class="hljs-string">'NedbSource'</span>);
+
+<span class="hljs-built_in">module</span>.exports = NedbSource;
+
+NedbSource.define(<span class="hljs-string">'open'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(open)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+    <span class="hljs-keyword">return</span> open.call(<span class="hljs-keyword">this</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+      <span class="hljs-keyword">this</span>.database = <span class="hljs-keyword">new</span> NedbDatabase({filename: <span class="hljs-keyword">this</span>.options.filename});
+      <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.load();
+    });
+  };
+});
+
+NedbSource.define(<span class="hljs-string">'clear'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(clear)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">()</span> </span>{
+    <span class="hljs-keyword">return</span> clear.call(<span class="hljs-keyword">this</span>, <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(resolve, reject)</span> </span>{
+      <span class="hljs-keyword">this</span>.database.remove({}, {multi: <span class="hljs-literal">true</span>}, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(err, numRemoved)</span> </span>{
+        debug.warn(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">': Removed '</span> + numRemoved + <span class="hljs-string">' CRDT operations from local database.'</span>);
+        <span class="hljs-keyword">if</span> (err) { reject(err); } <span class="hljs-keyword">else</span> { resolve(<span class="hljs-keyword">this</span>); }
+      }.bind(<span class="hljs-keyword">this</span>));
+    }.bind(<span class="hljs-keyword">this</span>)));
+  };
+});
+
+NedbSource.define(<span class="hljs-string">'load'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(load)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(dump)</span> </span>{
+    <span class="hljs-keyword">return</span> load.call(<span class="hljs-keyword">this</span>, dump, <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(resolve, reject)</span> </span>{
+      <span class="hljs-keyword">this</span>.database.loadDatabase(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(err)</span> </span>{
+        <span class="hljs-keyword">if</span> (err) { <span class="hljs-keyword">return</span> reject(err); }
+        <span class="hljs-built_in">Promise</span>.all([
+          <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(y, n)</span> </span>{
+            <span class="hljs-keyword">this</span>.database.ensureIndex({fieldName: <span class="hljs-string">'id'</span>}, cb.bind(<span class="hljs-keyword">this</span>, y, n));
+          }.bind(<span class="hljs-keyword">this</span>)),
+          <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(y, n)</span> </span>{
+            <span class="hljs-keyword">this</span>.database.ensureIndex({fieldName: <span class="hljs-string">'type'</span>}, cb.bind(<span class="hljs-keyword">this</span>, y, n));
+          }.bind(<span class="hljs-keyword">this</span>)),
+          <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(y, n)</span> </span>{
+            <span class="hljs-keyword">this</span>.database.ensureIndex({fieldName: <span class="hljs-string">'method'</span>}, cb.bind(<span class="hljs-keyword">this</span>, y, n));
+          }.bind(<span class="hljs-keyword">this</span>))
+        ]).then(resolve, reject);
+        <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">cb</span><span class="hljs-params">(resolve, reject, err)</span> </span>{
+          <span class="hljs-comment">/*jshint validthis:true*/</span>
+          <span class="hljs-keyword">if</span> (err) { reject(err); } <span class="hljs-keyword">else</span> { resolve(<span class="hljs-keyword">this</span>); }
+        }
+      }.bind(<span class="hljs-keyword">this</span>));
+    }.bind(<span class="hljs-keyword">this</span>)));
+  };
+});
+
+NedbSource.define(<span class="hljs-string">'append'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(append)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation, origin)</span> </span>{
+    <span class="hljs-keyword">return</span> append.call(<span class="hljs-keyword">this</span>, operation, origin, <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(resolve, reject)</span> </span>{
+      <span class="hljs-keyword">this</span>.database.insert(operation, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(err)</span> </span>{
+        <span class="hljs-keyword">if</span> (err) { debug.error(<span class="hljs-keyword">this</span>.type, err); }
+        <span class="hljs-keyword">if</span> (err) { reject(err); } <span class="hljs-keyword">else</span> { resolve(<span class="hljs-keyword">this</span>); }
+      }.bind(<span class="hljs-keyword">this</span>));
+    }.bind(<span class="hljs-keyword">this</span>)));
+  };
+});
+
+NedbSource.define(<span class="hljs-string">'sync'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(sync)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation, origin)</span> </span>{
+    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(resolve, reject)</span> </span>{
+      <span class="hljs-keyword">var</span> query = {id: operation.id};
+      <span class="hljs-keyword">this</span>.database.find(query, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(err, log)</span> </span>{
+        <span class="hljs-keyword">if</span> (err) { <span class="hljs-keyword">return</span> reject(err); }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>debug.info(‘find’, log);</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="hljs-keyword">var</span> override = <span class="hljs-built_in">Promise</span>.all(log.map(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation)</span> </span>{
+          <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.get(operation, <span class="hljs-literal">true</span>).invoke(operation, <span class="hljs-keyword">this</span>, <span class="hljs-literal">true</span>);
+        }.bind(<span class="hljs-keyword">this</span>)));
+        sync.call(<span class="hljs-keyword">this</span>, operation, origin, override).then(resolve, reject);
+      }.bind(<span class="hljs-keyword">this</span>));
+    }.bind(<span class="hljs-keyword">this</span>));
+  };
+});
+
+NedbSource.define(<span class="hljs-string">'delete'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(delete_)</span> </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(operation, origin)</span> </span>{
+    <span class="hljs-keyword">return</span> delete_.call(<span class="hljs-keyword">this</span>, operation, origin, <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(resolve, reject)</span> </span>{
+      <span class="hljs-keyword">var</span> query = {id: operation.id, $not: {method: <span class="hljs-string">'delete'</span>}};
+      <span class="hljs-keyword">this</span>.database.remove(query, {multi: <span class="hljs-literal">true</span>}, <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-params">(err, numRemoved)</span> </span>{
+        debug.warn(<span class="hljs-keyword">this</span>.type + <span class="hljs-string">': Removed '</span> + numRemoved + <span class="hljs-string">' CRDT operations from local database.'</span>);
+        <span class="hljs-keyword">if</span> (err) { reject(err); } <span class="hljs-keyword">else</span> { resolve(<span class="hljs-keyword">this</span>); }
+      }.bind(<span class="hljs-keyword">this</span>));
+    }.bind(<span class="hljs-keyword">this</span>)));
+  };
+});</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
