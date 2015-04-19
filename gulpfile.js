@@ -34,11 +34,13 @@ gulp.task('docs', function () {
 });
 
 gulp.task('docs-commit', shell.task([
+  'cp -r docs/ docscopy/',
   'git checkout gh-pages',
+  'rm -rf docs/',
+  'mv docscopy/ docs/',
   'git add ./docs',
   'git commit -a -m \"updates docs\"',
-  'git checkout master',
-  'git checkout development'
+  'git checkout master'
 ]));
 
 gulp.task('docs-push', ['docs', 'docs-commit'], function() {
