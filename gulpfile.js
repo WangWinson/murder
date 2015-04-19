@@ -41,7 +41,7 @@ gulp.task('docs-commit', shell.task([
   'git checkout development'
 ]));
 
-gulp.task('docs-push', ['checkout-master', 'docs-make', 'docs-commit'], function() {
+gulp.task('docs-push', ['docs', 'docs-commit'], function() {
   git.push('origin', 'gh-pages');
 });
 
