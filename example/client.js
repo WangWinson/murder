@@ -8,8 +8,8 @@ var author = require('./lib/author.js')(false),
 
 global.CRDTReactMixin = require('../lib/extras/ReactMixin.js');
 
-debug.enable('murder:*');
-// debug.enable('murder:info');
+// debug.enable('murder:*');
+debug.enable('murder:info');
 
 require('./lib/sources.js');
 
@@ -27,16 +27,27 @@ global.crows = murder;
 murder.sync().then(function () {
   console.log('murder synced', murder);
 
+  function flock() {
+    murder.toArray().forEach(function (fellow) {
+      if (fellow !== crow) { fellow.fly(); }
+    });
+    setTimeout(flock,  Math.max(20000, Math.random() * 60000));
+  }
+
   // Then construct a crow for this client instance.
   var crow = new Crow(author);
 
   // Initialize the crow.
   crow.sync().then(function () {
-    // Have the new crow join our murder of crows.
-    crow.fly();
     murder.add(crow.id);
 
+    ping();
+    setTimeout(flock, Math.max(30000, Math.random() * 60000));
+
     // Every 10 seconds have the crow fly.
-    setInterval(crow.fly.bind(crow), 10000);
+    function ping() {
+      crow.fly();
+      setInterval(ping, Math.max(10000, Math.random() * 30000));
+    }
   });
 });

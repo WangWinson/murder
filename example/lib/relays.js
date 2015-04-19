@@ -12,12 +12,12 @@ var WebSocketRelay = require('../../lib/relays/WebSocketRelay.js');
 
 var websocket;
 
-if (isNodeJS) {
-  websocket = new WebSocketRelay({});
+if (!isNodeJS || global.example_client === true) {
+  websocket = new WebSocketRelay({url: config.webSocketClientUrl});
 }
 
 else {
-  websocket = new WebSocketRelay({url: config.webSocketClientUrl});
+  websocket = new WebSocketRelay({});
 }
 
 // Push each source to sources array.

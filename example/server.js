@@ -92,16 +92,7 @@ exports.listen = function (cb) {
 
       var crowTimers = {};
 
-      // TODO: REMOVE IS NOT WORKING.
-      // murder.collect().then(function () {
-        murder.toArray().forEach(removeIdleCrows);
-          //function (crow) {
-        //   // console.log('GOT HERE:', crow.id);
-        //   crowTimers[crow.id] = crowTimers[crow.id] || setTimeout(
-        //     murder.remove.bind(murder, crow.id), 40000);
-        //
-        // });
-      // });
+      murder.toArray().forEach(removeIdleCrows);
 
       murder.on('add', removeIdleCrows);
 
@@ -109,15 +100,17 @@ exports.listen = function (cb) {
         function timeoutCrow() {
           clearTimeout(crowTimers[params.id]);
           crowTimers[params.id] = setTimeout(
-            murder.remove.bind(murder, params.id), 20000);
+            murder.remove.bind(murder, params.id), 45000);
         }
 
         timeoutCrow();
 
-        new Crow(params.id).on('fly', function () {
-          timeoutCrow();
+        new Crow(params.id).on('fly', function (params, operation) {
+          if (operation.author === operation.id) {
+            timeoutCrow();
+          }
         });
-      }//);
+      }
 
       murder.on('remove', function (params) {
         clearTimeout(crowTimers[params.id]);
