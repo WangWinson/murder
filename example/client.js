@@ -8,8 +8,8 @@ var author = require('./lib/author.js')(false),
 
 global.CRDTReactMixin = require('../lib/extras/ReactMixin.js');
 
-// debug.enable('murder:*');
-debug.enable('murder:info');
+debug.enable('murder:*');
+// debug.enable('murder:info');
 
 require('./lib/sources.js');
 

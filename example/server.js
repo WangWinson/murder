@@ -72,11 +72,7 @@ exports.listen = function (cb) {
     var murder = new Murder('of_crows');
 
     // Initialize the muder.
-    // debugger;
     murder.sync().then(function () {
-      // console.log('murder synced', murder);
-      // debugger;
-
       // Then construct a crow for this client instance.
       var crow = new Crow(author);
 

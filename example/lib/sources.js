@@ -12,7 +12,7 @@ var NedbSource = require('../../lib/sources/NedbSource.js'),
 var storage;
 
 if (isNodeJS) {
-  storage = new NedbSource({filename: __dirname + '/../_database'});
+  storage = new NedbSource({fsDir: __dirname + '/../_database'});
 }
 
 else {
