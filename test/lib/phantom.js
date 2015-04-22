@@ -1,4 +1,10 @@
-require('../../example/public/bind.js');
-require('es6-shim');
+var isPhantomJS =
+  typeof window !== 'undefined' &&
+  /PhantomJS/.test(window.navigator.userAgent);
 
-global.WebSocket = global.WebSocket || (global.WebSocket = function () {});
+if (isPhantomJS) {
+  require('../../example/public/bind.js');
+  require('es6-shim');
+
+  window.WebSocket = function WebSocket() {};
+}

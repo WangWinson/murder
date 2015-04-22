@@ -28,8 +28,13 @@ murder.sync().then(function () {
   console.log('murder synced', murder);
 
   function flock() {
+    var count = 0;
     murder.toArray().forEach(function (fellow) {
-      if (fellow !== crow) { fellow.fly(); }
+      if (count > 5) { return; }
+      if (fellow !== crow) {
+        setTimeout(fellow.fly.bind(fellow), 100 * count);
+      }
+      count += 1;
     });
     setTimeout(flock,  Math.max(20000, Math.random() * 60000));
   }

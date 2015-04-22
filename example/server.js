@@ -5,7 +5,9 @@
 require('../lib/index.js');
 
 var browserify = require('browserify'),
+    domain = require('domain'),
     express = require('express'),
+    http = require('http'),
     ws = require('ws');
 
 var author = require('./lib/author.js')(true),
@@ -15,106 +17,126 @@ var author = require('./lib/author.js')(true),
 
 debug.log('Server initializing...');
 
-var app = express(),
-    wss = new ws.Server({port: config.webSocketPort});
+var dom = domain.create();
 
-debug.log('Server initialized.');
-
-wss.on('connection', function wsConn(ws) {
-  debug.info('New incoming WebSocket connection...');
-  relays.websocket.connect(ws);
+dom.on('error', function (err) {
+  console.error(err.stack);
+  if (!/EADDRINUSE/.test(err.toString())) { process.exit(); }
 });
 
-app.get('/main.js', function (req, res) {
-  debug.info('Received main.js request...');
-  res.setHeader('content-type', 'application/javascript');
-  browserify(__dirname + '/client.js', {debug: true}).
-    bundle().
-    on('error', debug.error).
-    pipe(res);
-});
+exports.create = function (cb) {
+  dom.run(function () {
+    var app = express(),
+        wss = new ws.Server({port: config.webSocketPort});
 
-app.use(express.static(__dirname + '/public'));
+    debug.log('Server initialized.');
 
-exports.app = app;
-exports.wss = wss;
+    wss.on('connection', function wsConn(ws) {
+      debug.info('New incoming WebSocket connection...');
+      relays.websocket.connect(ws);
+    });
 
-exports.model = {
-  Crow: require('./model/Crow.js'),
-  Murder: require('./model/Murder.js'),
-  Post: require('./model/Post.js'),
-  SocialNetwork: require('./model/SocialNetwork.js'),
-  Topic: require('./model/Topic.js'),
-  User: require('./model/User.js')
-};
+    app.get('/main.js', function (req, res) {
+      debug.info('Received main.js request...');
+      res.setHeader('content-type', 'application/javascript');
+      browserify(__dirname + '/client.js', {debug: true}).
+        bundle().
+        on('error', debug.error).
+        pipe(res);
+    });
 
-exports.listen = function (cb) {
-  app.listen(3000, function (err) {
-    if (err) { throw err; }
+    app.use(express.static(__dirname + '/public'));
 
-    debug.info('Running server at http://localhost:3000 ...');
-    if (cb) { cb(); }
+    exports.app = app;
+    exports.wss = wss;
 
-    // Import data model classes.
-    var Crow = require('./model/Crow.js'),
-        Murder = require('./model/Murder.js');
+    exports.model = {
+      Crow: require('./model/Crow.js'),
+      Murder: require('./model/Murder.js'),
+      Post: require('./model/Post.js'),
+      SocialNetwork: require('./model/SocialNetwork.js'),
+      Topic: require('./model/Topic.js'),
+      User: require('./model/User.js')
+    };
 
-    // Overwrite sources for server, since it is the centralized source.
-    // Crow.prototype.sources =
-    // Murder.prototype.sources = storageSources;
+    var server = http.createServer(exports.app);
 
-    // Overwrite author for server side to use server author id.
-    // TODO: set author for every model
-    Crow.prototype.author =
-    Murder.prototype.author = author;
+    server.on('error', handleError);
+    exports.app.on('error', handleError);
+    exports.app.on('uncaughtException', handleError);
+    function handleError(err) {
+      if (cb && !cb.called) { cb(err); cb.called = true; }
+      else { console.error(err); }
+    }
 
-    // Construct a murder of crows with the id of this server and the list of sources.
-    var murder = new Murder('of_crows');
+    server.listen(3000, function (err) {
+      if (err) { handleError(err); }
 
-    // Initialize the muder.
-    murder.sync().then(function () {
-      // Then construct a crow for this client instance.
-      var crow = new Crow(author);
+      debug.info('Running server at http://localhost:3000 ...');
+      if (cb && !cb.called) { cb(); cb.called = true; }
 
-      // Initialize the crow.
-      crow.sync().then(function () {
-        // Have the new crow join our murder of crows.
-        crow.fly();
-        murder.add(crow.id);
+      // Import data model classes.
+      var Crow = require('./model/Crow.js'),
+          Murder = require('./model/Murder.js');
 
-        // Every 10 seconds have the crow fly.
-        setInterval(crow.fly.bind(crow), 10000);
-      });
+      // Overwrite sources for server, since it is the centralized source.
+      // Crow.prototype.sources =
+      // Murder.prototype.sources = storageSources;
 
-      var crowTimers = {};
+      // Overwrite author for server side to use server author id.
+      // TODO: set author for every model
+      Crow.prototype.author =
+      Murder.prototype.author = author;
 
-      murder.toArray().forEach(removeIdleCrows);
+      // Construct a murder of crows with the id of this server and the list of sources.
+      var murder = new Murder('of_crows');
 
-      murder.on('add', removeIdleCrows);
+      // Initialize the muder.
+      murder.sync().then(function () {
+        // Then construct a crow for this client instance.
+        var crow = new Crow(author);
 
-      function removeIdleCrows(params) {
-        function timeoutCrow() {
-          clearTimeout(crowTimers[params.id]);
-          crowTimers[params.id] = setTimeout(
-            murder.remove.bind(murder, params.id), 45000);
+        // Initialize the crow.
+        crow.sync().then(function () {
+          // Have the new crow join our murder of crows.
+          crow.fly();
+          murder.add(crow.id);
+
+          // Every 10 seconds have the crow fly.
+          setInterval(crow.fly.bind(crow), 10000);
+        });
+
+        var crowTimers = {};
+
+        murder.toArray().forEach(removeIdleCrows);
+
+        murder.on('add', removeIdleCrows);
+
+        function removeIdleCrows(params) {
+          function timeoutCrow() {
+            clearTimeout(crowTimers[params.id]);
+            crowTimers[params.id] = setTimeout(
+              murder.remove.bind(murder, params.id), 45000);
+          }
+
+          timeoutCrow();
+
+          new Crow(params.id).on('fly', function (params, operation) {
+            if (operation.author === operation.id) {
+              timeoutCrow();
+            }
+          });
         }
 
-        timeoutCrow();
+        murder.on('remove', function (params) {
+          clearTimeout(crowTimers[params.id]);
 
-        new Crow(params.id).on('fly', function (params, operation) {
-          if (operation.author === operation.id) {
-            timeoutCrow();
-          }
+          new Crow(params.id).delete();
         });
-      }
-
-      murder.on('remove', function (params) {
-        clearTimeout(crowTimers[params.id]);
-
-        new Crow(params.id).delete();
       });
     });
   });
 };
 
-if (!module.parent) { exports.listen(); }
+
+if (!module.parent) { exports.create(); }

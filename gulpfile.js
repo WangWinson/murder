@@ -83,14 +83,15 @@ gulp.task('test-dev', function (done) {
 });
 
 function startKarma(name, done) {
-  exampleServer.listen(function () {
+  exampleServer.create(run);
+  function run() {
     karma.start({
       configFile: __dirname + '/karma/' + (name ? name + '.' : '') + 'conf.js'
     }, function (karmaExitCode) {
       done(karmaExitCode);
       setTimeout(process.exit.bind(process, karmaExitCode), 5000);
     });
-  });
+  }
 }
 
 gulp.task('default', ['docs', 'test']);
