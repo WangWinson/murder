@@ -45,13 +45,13 @@ murder.sync().then(function () {
   crow.sync().then(function () {
     murder.add(crow.id);
 
-    ping();
-    setTimeout(flock, Math.max(30000, Math.random() * 60000));
-
-    // Every 10 seconds have the crow fly.
-    function ping() {
-      crow.fly();
-      setInterval(ping, Math.max(10000, Math.random() * 30000));
-    }
+    // ping();
+    // setTimeout(flock, Math.max(30000, Math.random() * 60000));
+    //
+    // // Every 10 seconds have the crow fly.
+    // function ping() {
+    //   crow.fly();
+    //   setInterval(ping, Math.max(10000, Math.random() * 30000));
+    // }
   });
 });

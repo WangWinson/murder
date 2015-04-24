@@ -8,9 +8,9 @@ module.exports = function (config) {
 
     browsers: [
       'Chrome',
-      'Firefox',
-      // 'PhantomJS'
-      'Safari'
+      // 'Firefox',
+      'PhantomJS'
+      // 'Safari'
     ],
 
     singleRun: false

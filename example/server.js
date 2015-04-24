@@ -93,6 +93,7 @@ exports.create = function (cb) {
 
       // Initialize the muder.
       murder.sync().then(function () {
+        console.log("GOT HERE");
         // Then construct a crow for this client instance.
         var crow = new Crow(author);
 
@@ -103,8 +104,10 @@ exports.create = function (cb) {
           murder.add(crow.id);
 
           // Every 10 seconds have the crow fly.
-          setInterval(crow.fly.bind(crow), 10000);
+          // setInterval(crow.fly.bind(crow), 10000);
         });
+
+        return;
 
         var crowTimers = {};
 

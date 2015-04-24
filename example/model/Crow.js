@@ -24,4 +24,5 @@ Crow.defineOperation('fly', function (params, operation) {
   this.state = this.state || {};
   this.state.x = params.x;
   this.state.y = params.y;
+  this.compress();
 });
