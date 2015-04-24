@@ -15,10 +15,30 @@ describe('CRDT:sync()', function() {
     });
   });
 
-  xdescribe('a basic CRDT', function () {
+  describe('a sourced CRDT', function () {
     it('should sync', function (done) {
       var crdt = new system.CRDT(null, {
-        relays: [new system.Relay()],
+        sources: [new system.Source()]
+      });
+      expect(crdt).to.be.ok;
+      crdt.sync().then(function () { done(); }, done);
+    });
+  });
+
+  describe('a relayed CRDT', function () {
+    it('should sync', function (done) {
+      var crdt = new system.CRDT(null, {
+        relays: [new system.RelayStub()]
+      });
+      expect(crdt).to.be.ok;
+      crdt.sync().then(function () { done(); }, done);
+    });
+  });
+
+  describe('a basic CRDT', function () {
+    it('should sync', function (done) {
+      var crdt = new system.CRDT(null, {
+        relays: [new system.RelayStub()],
         sources: [new system.Source()]
       });
       expect(crdt).to.be.ok;
