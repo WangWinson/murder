@@ -51,7 +51,7 @@ murder.sync().then(function () {
     // Every 10 seconds have the crow fly.
     function ping() {
       crow.fly();
-      // setInterval(ping, Math.max(10000, Math.random() * 30000));
+      setInterval(ping, Math.max(10000, Math.random() * 30000));
     }
   });
 });

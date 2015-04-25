@@ -103,7 +103,7 @@ exports.create = function (cb) {
           murder.add(crow.id);
 
           // Every 10 seconds have the crow fly.
-          // setInterval(crow.fly.bind(crow), 10000);
+          setInterval(crow.fly.bind(crow), 10000);
         });
 
         var crowTimers = {};
